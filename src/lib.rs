@@ -1,8 +1,8 @@
 #![cfg(test)]
 
-use std::rc::Rc;
+use std::{marker::PhantomData, rc::Rc};
 
-use cost::{ApplyMorphism, DeductiveLinearCost, Size};
+use cost::{ApplyMorphism, Float, DeductiveLinearCost, MorphismOutput};
 use morphism::Morphism;
 use object::Object;
 use pathfinding::prelude::dijkstra;
@@ -23,7 +23,7 @@ type Instruction = Morphism<PositionId, InstructionMeta>;
 #[derive(Clone, Debug)]
 struct InstructionMeta {
     name: String,
-    logic: Rc<dyn ApplyMorphism<Size>>,
+    logic: Rc<dyn ApplyMorphism>,
 }
 
 impl PartialEq for InstructionMeta {
@@ -37,8 +37,8 @@ impl std::hash::Hash for InstructionMeta {
         self.name.hash(state);
     }
 }
-impl ApplyMorphism<Size> for InstructionMeta {
-    fn apply(&self, input: Size) -> cost::MorphismOutput<Size> {
+impl ApplyMorphism for InstructionMeta {
+    fn apply(&self, input: Float) -> MorphismOutput {
         self.logic.apply(input)
     }
 }
@@ -70,35 +70,47 @@ enum FixedTermClaim {
 }
 
 fn get_positions() -> Category<PositionId, InstructionMeta> {
-    let loan = Position::new_terminal(PositionId::new(0), 1);
-    let deposit = Position::new(PositionId::new(1), 1);
-    let other_deposit = Position::new(PositionId::new(2), 1);
+    let loan = Position::new(PositionId::new(0), 1.into());
+    let deposit = Position::new(PositionId::new(1), 1.into());
+    let other_deposit = Position::new(PositionId::new(2), 1.into());
     let repay_loan = Instruction {
         source: PositionId::new(1),
         target: PositionId::new(0),
         metadata: InstructionMeta {
             name: "repay".to_owned(),
-            logic: Rc::new(DeductiveLinearCost { m: 1, b: 1 }),
+            logic: Rc::new(DeductiveLinearCost {
+                m: 1.into(),
+                b: 1.into(),
+            }),
         },
-        input_size: 0,
+        input_size: 0.into(),
+        _phantom: PhantomData,
     };
     let swap1to2 = Instruction {
         source: PositionId::new(1),
         target: PositionId::new(2),
         metadata: InstructionMeta {
             name: "repay".to_owned(),
-            logic: Rc::new(DeductiveLinearCost { m: 10, b: 10 }),
+            logic: Rc::new(DeductiveLinearCost {
+                m: 10.into(),
+                b: 10.into(),
+            }),
         },
-        input_size: 0,
+        input_size: 0.into(),
+        _phantom: PhantomData,
     };
     let swap2to1 = Instruction {
         source: PositionId::new(2),
         target: PositionId::new(1),
         metadata: InstructionMeta {
             name: "repay".to_owned(),
-            logic: Rc::new(DeductiveLinearCost { m: 10, b: 10 }),
+            logic: Rc::new(DeductiveLinearCost {
+                m: 10.into(),
+                b: 10.into(),
+            }),
         },
-        input_size: 0,
+        input_size: 0.into(),
+        _phantom: PhantomData,
     };
 
     let category = Category::of(
@@ -138,3 +150,35 @@ trait Limiter {
 // trait SelectMe{}
 struct NonNegative;
 struct NonComposable;
+
+
+
+/*
+dijkstra: 
+- requires non-negative cost
+- allows size accumulation
+
+bellman_ford:
+- allows negative cost
+- ignores size accumulation
+
+generic optimization method:
+- if cost can be negative, use bellman_ford
+- if cost cannot be negative, use dijkstra
+
+specific optimization methods:
+- with_size_accumulation - dijkstra requires non-negative
+- allowing_negative_cost - bellman_ford works with anything but comes with a caveat in the name or docs
+
+trait CostMeta {
+    const IS_NEGATABLE: bool;
+}
+
+unsafe trait NeverNegative
+- type constraint on dijkstra
+- impl Negatable with false
+
+ */
+
+
+

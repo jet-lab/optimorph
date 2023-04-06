@@ -1,22 +1,27 @@
-use std::{fmt::Debug, hash::Hash, rc::Rc};
+use std::{fmt::Debug, hash::Hash, marker::PhantomData, rc::Rc};
 
 use petgraph::IntoWeightedEdge;
 
 use crate::{
-    cost::{ApplyMorphism, MorphismOutput, Size},
+    category::{Category, Key},
+    cost::{ApplyMorphism, Float, MorphismOutput},
     object::Object,
-    vertex::Vertex, category::{Key, Category},
+    vertex::Vertex,
 };
 
 //todo generic over Cost (not Size)
-pub trait MorphismMeta: Hash + Debug + Clone + Eq + ApplyMorphism<Size> {}
-impl<M: Hash + Debug + Clone + Eq + ApplyMorphism<Size>> MorphismMeta for M {}
+pub trait MorphismMeta<Size, Cost>: Hash + Debug + Clone + Eq + ApplyMorphism<Size, Cost> {}
+impl<Size, Cost, M> MorphismMeta<Size, Cost> for M where
+    M: Hash + Debug + Clone + Eq + ApplyMorphism<Size, Cost>
+{
+}
 
-#[derive(Clone, Debug)]
-pub struct Morphism<Id, M>
+#[derive(Debug)]
+pub struct Morphism<Id, M, Size = Float, Cost = Float>
 where
     Id: Key,
-    M: MorphismMeta,
+    M: MorphismMeta<Size, Cost>,
+    Size: Clone, //todo size where?
 {
     pub source: Id,
     pub target: Id,
@@ -31,20 +36,39 @@ where
     ///   great. set to 1 or the average of all position sizes or whatever i
     ///   dunno
     /// - for dynamic it doesn't matter, you can set to zero
-    pub input_size: Size,
+    pub input_size: Size,  //todo size where?
+    pub _phantom: PhantomData<Cost>,
 }
 
-impl<Id, M> Morphism<Id, M>
+impl<Id, M, Size, Cost> Clone for Morphism<Id, M, Size, Cost>
 where
     Id: Key,
-    M: MorphismMeta,
+    M: MorphismMeta<Size, Cost>,
+    Size: Clone, //todo size where?
+{
+    fn clone(&self) -> Self {
+        Self {
+            source: self.source.clone(),
+            target: self.target.clone(),
+            metadata: self.metadata.clone(),
+            input_size: self.input_size.clone(),
+            _phantom: PhantomData,
+        }
+    }
+}
+
+impl<Id, M, Size, Cost> Morphism<Id, M, Size, Cost>
+where
+    Id: Key,
+    M: MorphismMeta<Size, Cost>,
+    Size: Clone, //todo size where?
 {
     /// Needed for `pathfinding`
     pub fn successors(
         &self,
-        category: &Category<Id, M>,
+        category: &Category<Id, M, Size, Cost>,
         input_size: Size,
-    ) -> Vec<(Vertex<Id, M>, Size)> {
+    ) -> Vec<(Vertex<Id, M, Size, Cost>, Cost)> {
         // todo find a way to get a compile-time guarantee that unwrap cannot fail
         let mut next_object = category.get_object(&self.target).unwrap().clone();
         let output = self.metadata.apply(input_size);
@@ -55,14 +79,15 @@ where
 }
 
 /// Needed for `petgraph`
-impl<Id, M> IntoWeightedEdge<Size> for Morphism<Id, M>
+impl<Id, M, Size, Cost> IntoWeightedEdge<Cost> for Morphism<Id, M, Size, Cost>
 where
     Id: Key,
-    M: MorphismMeta,
+    M: MorphismMeta<Size, Cost>,
+    Size: Clone, //todo size where?
 {
     type NodeId = Id;
 
-    fn into_weighted_edge(self) -> (Self::NodeId, Self::NodeId, Size) {
+    fn into_weighted_edge(self) -> (Self::NodeId, Self::NodeId, Cost) {
         (
             self.source,
             self.target,
@@ -72,10 +97,11 @@ where
 }
 
 /// Needed for `pathfinding`
-impl<Id, M> PartialEq for Morphism<Id, M>
+impl<Id, M, Size, Cost> PartialEq for Morphism<Id, M, Size, Cost>
 where
     Id: Key,
-    M: MorphismMeta,
+    M: MorphismMeta<Size, Cost>,
+    Size: Clone, //todo size where?
 {
     fn eq(&self, other: &Self) -> bool {
         self.metadata == other.metadata
@@ -85,18 +111,20 @@ where
 }
 
 /// Needed for `pathfinding`
-impl<Id, M> Eq for Morphism<Id, M>
+impl<Id, M, Size, Cost> Eq for Morphism<Id, M, Size, Cost>
 where
     Id: Key,
-    M: MorphismMeta,
+    M: MorphismMeta<Size, Cost>,
+    Size: Clone, //todo size where?
 {
 }
 
 /// Needed for `pathfinding`
-impl<Id, M> std::hash::Hash for Morphism<Id, M>
+impl<Id, M, Size, Cost> std::hash::Hash for Morphism<Id, M, Size, Cost>
 where
     Id: Key,
-    M: MorphismMeta,
+    M: MorphismMeta<Size, Cost>,
+    Size: Clone, //todo size where?
 {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.source.hash(state);

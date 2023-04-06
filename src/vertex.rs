@@ -1,8 +1,10 @@
 use std::{fmt::Debug, hash::Hash, rc::Rc};
 
+use pathfinding::num_traits::Zero;
+
 use crate::{
     category::{Category, Key},
-    cost::{ApplyMorphism, Size},
+    cost::ApplyMorphism,
     morphism::{Morphism, MorphismMeta},
     object::Object,
 };
@@ -43,44 +45,51 @@ use crate::{
 /// assigning the morphism's cost as the weight of the edge from the input
 /// object to the morphism. Edges from morphisms to objects have 0 weight.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub enum Vertex<Id, M>
+pub enum Vertex<Id, M, Size, Cost>
 where
     Id: Key,
-    M: MorphismMeta,
+    M: MorphismMeta<Size, Cost>,
+    Size: Clone, //todo size where?
 {
-    Object(Object<Id>),
+    Object(Object<Id, Size>),
     Morphism {
-        inner: Morphism<Id, M>,
+        inner: Morphism<Id, M, Size, Cost>,
         input_size: Size,
     },
 }
 
-impl<Id, M> Default for Vertex<Id, M>
+impl<Id, M, Size, Cost> Default for Vertex<Id, M, Size, Cost>
 where
     Id: Key,
-    M: MorphismMeta,
+    M: MorphismMeta<Size, Cost>,
+    Size: Clone, //todo size where?
 {
     fn default() -> Self {
         panic!("do not use this. it makes no sense. this is only provided to satisfy annoying trait bounds that are not actually used");
     }
 }
 
-impl<Id, M> Vertex<Id, M>
+impl<Id, M, Size, Cost> Vertex<Id, M, Size, Cost>
 where
     Id: Key,
-    M: MorphismMeta,
+    M: MorphismMeta<Size, Cost>,
+    Size: Clone, //todo size where?
+    Cost: Zero,
 {
-    pub fn successors(&self, category: &Category<Id, M>) -> Vec<(Vertex<Id, M>, Size)> {
+    pub fn successors(
+        &self,
+        category: &Category<Id, M, Size, Cost>,
+    ) -> Vec<(Vertex<Id, M, Size, Cost>, Cost)> {
         match self {
-            // Vertex::Null => vec![],
             Vertex::Object(o) => o.successors(category),
-            Vertex::Morphism { inner, input_size } => inner.successors(category, *input_size),
+            Vertex::Morphism { inner, input_size } => {
+                inner.successors(category, input_size.clone())
+            }
         }
     }
 
     pub fn is_object_with_id(&self, id: &Id) -> bool {
         match self {
-            // Vertex::Null => false,
             Vertex::Object(o) => &o.id == id,
             Vertex::Morphism { .. } => false,
         }

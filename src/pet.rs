@@ -9,7 +9,7 @@ use petgraph::{
 
 use crate::{
     category::{Category, Key},
-    cost::{ApplyMorphism, Size},
+    cost::{ApplyMorphism},
     get_positions,
     morphism::MorphismMeta,
     vertex::Vertex,
@@ -41,7 +41,7 @@ fn pet() {
 
 #[test]
 fn pet01() {
-    let cg = pet012(&get_positions(), 100);
+    let cg = pet012(&get_positions(), 100.into());
     let start_deposit = *cg.object_id_to_index.get(&PositionId::new(2)).unwrap();
     let loan = *cg.object_id_to_index.get(&PositionId::new(0)).unwrap();
     let x = bellman_ford(&cg.graph, start_deposit).unwrap();
@@ -61,20 +61,23 @@ fn pet01() {
     // println!("{path:#?}");
 }
 
-struct CategoryGraph<Id, M>
+struct CategoryGraph<Id, M, Size, Cost>
 where
     Id: Key,
-    M: MorphismMeta,
+    M: MorphismMeta<Size, Cost>,
+    Size: Clone, //todo size where?
 {
-    graph: Graph<Vertex<Id, M>, f64>,
+    graph: Graph<Vertex<Id, M, Size, Cost>, Cost>,
     object_id_to_index: HashMap<Id, NodeIndex>,
-    index_to_vertex: HashMap<NodeIndex, Vertex<Id, M>>,
+    index_to_vertex: HashMap<NodeIndex, Vertex<Id, M, Size, Cost>>,
 }
 
-fn pet012<Id, M>(category: &Category<Id, M>, input_size: Size) -> CategoryGraph<Id, M>
+fn pet012<Id, M, Size, Cost>(category: &Category<Id, M, Size, Cost>, input_size: Size) -> CategoryGraph<Id, M, Size, Cost>
 where
     Id: Key,
-    M: MorphismMeta,
+    M: MorphismMeta<Size, Cost>,
+    Size: Clone, //todo size where?
+    Cost: FloatMeasure,
 {
     let mut graph = Graph::new();
     let (objects, morphisms, _) = category.clone().destruct();
@@ -89,14 +92,14 @@ where
     for morphism in &morphisms {
         let index = graph.add_node(Vertex::Morphism {
             inner: morphism.clone(),
-            input_size,
+            input_size: input_size.clone(),
         });
         morphism_to_index.insert(morphism.clone(), index);
         index_to_vertex.insert(
             index,
             Vertex::Morphism {
                 inner: morphism.clone(),
-                input_size,
+                input_size: input_size.clone(),
             },
         );
     }
@@ -106,12 +109,12 @@ where
             (
                 *object_id_to_index.get(&morphism.source).unwrap(),
                 index,
-                0.0, //todo
+                Cost::zero(),
             ),
             (
                 index,
                 *object_id_to_index.get(&morphism.target).unwrap(),
-                morphism.metadata.apply(100).cost as f64,
+                morphism.metadata.apply(input_size.clone()).cost,
             ),
         ]);
     }
