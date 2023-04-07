@@ -64,7 +64,7 @@ struct CategoryGraph<Id, M, Size, Cost>
 where
     Id: Key,
     M: MorphismMeta + ApplyMorphism<Size, Cost>,
-    Size: Clone, //todo size where?
+    Size: Clone,
     Cost: FloatMeasure,
 {
     graph: Graph<Vertex<Id, M, Size>, Cost>,
@@ -76,7 +76,7 @@ impl<Id, M, Size, Cost> CategoryGraph<Id, M, Size, Cost>
 where
     Id: Key,
     M: MorphismMeta + ApplyMorphism<Size, Cost>,
-    Size: Clone, //todo size where?
+    Size: Clone,
     Cost: FloatMeasure,
 {
     fn new<Object: HasId<Id>>(

@@ -1,7 +1,5 @@
 use std::ops::{Add, Mul, Sub};
 
-/// todo generify
-// pub type Size = i64;
 use ordered_float::OrderedFloat;
 use pathfinding::num_traits::Zero;
 use petgraph::algo::FloatMeasure;

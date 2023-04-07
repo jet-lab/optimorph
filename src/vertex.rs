@@ -82,7 +82,7 @@ where
         match self {
             Vertex::Object { id, size } => category
                 .get_outbound(id)
-                .unwrap() //todo
+                .expect("The object id was not found in the category") //todo
                 .iter()
                 .map(|m| {
                     (

@@ -6,7 +6,6 @@ use crate::{
     vertex::Vertex,
 };
 
-//todo generic over Cost (not Size)
 pub trait MorphismMeta: Hash + Clone + Eq {}
 impl<M> MorphismMeta for M where M: Hash + Clone + Eq {}
 
