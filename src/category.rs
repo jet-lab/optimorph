@@ -6,7 +6,10 @@ use std::{
 };
 use thiserror::Error;
 
-use crate::morphism::{Morphism, MorphismMeta};
+use crate::{
+    impls::{SimpleMorphism, SimpleObject},
+    morphism::{Morphism, MorphismMeta},
+};
 
 pub trait HasId<Id: Key> {
     fn id(&self) -> Id;
@@ -16,7 +19,7 @@ pub trait Key: Eq + Hash + Debug + Clone {}
 impl<K: Eq + Hash + Debug + Clone> Key for K {}
 
 #[derive(Debug)]
-pub struct Category<Id, M, Object = Id>
+pub struct Category<Id = SimpleObject, M = SimpleMorphism, Object = Id>
 where
     Id: Key,
     Object: HasId<Id>,
