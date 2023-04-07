@@ -1,6 +1,7 @@
 use std::{fmt::Debug, hash::Hash};
 
 use crate::category::Key;
+use crate::cost::ApplyMorphism;
 use crate::morphism::MorphismMeta;
 use crate::object::HasId;
 use crate::vertex::Vertex;
@@ -12,15 +13,15 @@ use crate::category::Category;
 pub fn optimize_single_path_with_dijkstra<
     Id: Key,
     Object: HasId<Id>,
-    M: MorphismMeta<Size, Cost>,
+    M: MorphismMeta + ApplyMorphism<Size, Cost>,
     Size: PathfindingSize,
     Cost: PathfindingCost,
 >(
-    category: Category<Id, M, Object, Size, Cost>,
+    category: Category<Id, M, Object, Cost>,
     source: Id,
     target: Id,
     input_size: Size,
-) -> Option<(Vec<Vertex<Id, M, Size, Cost>>, Cost)> {
+) -> Option<(Vec<Vertex<Id, M, Size>>, Cost)> {
     let start_vertex = Vertex::Object {
         id: source,
         size: input_size,

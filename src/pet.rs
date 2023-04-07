@@ -12,7 +12,7 @@ use crate::{
     morphism::MorphismMeta,
     object::HasId,
     vertex::Vertex,
-    PositionId,
+    PositionId, cost::ApplyMorphism,
 };
 
 #[test]
@@ -25,15 +25,15 @@ fn pet01() {
 fn optimize<
     Id: Key,
     Object: HasId<Id>,
-    M: MorphismMeta<Size, Cost> + std::fmt::Debug,
+    M: MorphismMeta + ApplyMorphism<Size, Cost>,
     Size: Clone + std::fmt::Debug,
     Cost: FloatMeasure,
 >(
-    category: Category<Id, M, Object, Size, Cost>,
+    category: Category<Id, M, Object, Cost>,
     source: Id,
     target: Id,
     input_size: Size, // used for all morphisms - accumulation is not supported
-) -> Option<(Vec<Vertex<Id, M, Size, Cost>>, Cost)> {
+) -> Option<(Vec<Vertex<Id, M, Size>>, Cost)> {
     let cg = CategoryGraph::new(&category, input_size);
     let source_index = *cg.object_id_to_index.get(&source)?;
     let target_index = *cg.object_id_to_index.get(&target)?;
@@ -62,24 +62,24 @@ fn optimize<
 struct CategoryGraph<Id, M, Size, Cost>
 where
     Id: Key,
-    M: MorphismMeta<Size, Cost>,
+    M: MorphismMeta + ApplyMorphism<Size, Cost>,
     Size: Clone, //todo size where?
     Cost: FloatMeasure,
 {
-    graph: Graph<Vertex<Id, M, Size, Cost>, Cost>,
+    graph: Graph<Vertex<Id, M, Size>, Cost>,
     object_id_to_index: HashMap<Id, NodeIndex>,
-    index_to_vertex: HashMap<NodeIndex, Vertex<Id, M, Size, Cost>>,
+    index_to_vertex: HashMap<NodeIndex, Vertex<Id, M, Size>>,
 }
 
 impl<Id, M, Size, Cost> CategoryGraph<Id, M, Size, Cost>
 where
     Id: Key,
-    M: MorphismMeta<Size, Cost>,
+    M: MorphismMeta + ApplyMorphism<Size, Cost>,
     Size: Clone, //todo size where?
     Cost: FloatMeasure,
 {
     fn new<Object: HasId<Id>>(
-        category: &Category<Id, M, Object, Size, Cost>,
+        category: &Category<Id, M, Object, Cost>,
         input_size: Size,
     ) -> CategoryGraph<Id, M, Size, Cost> {
         let mut graph = Graph::new();

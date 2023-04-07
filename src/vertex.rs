@@ -5,7 +5,7 @@ use pathfinding::num_traits::Zero;
 use crate::{
     category::{Category, Key},
     morphism::{Morphism, MorphismMeta},
-    object::HasId,
+    object::HasId, cost::ApplyMorphism,
 };
 
 /// There are two layers of graphs.
@@ -44,44 +44,43 @@ use crate::{
 /// assigning the morphism's cost as the weight of the edge from the input
 /// object to the morphism. Edges from morphisms to objects have 0 weight.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub enum Vertex<Id, M, Size, Cost>
+pub enum Vertex<Id, M, Size>
 where
     Id: Key,
-    M: MorphismMeta<Size, Cost>,
-    Size: Clone, //todo size where?
+    M: MorphismMeta,
+    Size: Clone,
 {
     Object {
         id: Id,
         size: Size,
     },
     Morphism {
-        inner: Morphism<Id, M, Size, Cost>,
+        inner: Morphism<Id, M>,
         input_size: Size,
     },
 }
 
-impl<Id, M, Size, Cost> Default for Vertex<Id, M, Size, Cost>
+impl<Id, M, Size> Default for Vertex<Id, M, Size>
 where
     Id: Key,
-    M: MorphismMeta<Size, Cost>,
-    Size: Clone, //todo size where?
+    M: MorphismMeta,
+    Size: Clone,
 {
     fn default() -> Self {
         panic!("do not use this. it makes no sense. this is only implemented to satisfy annoying trait bounds that are not actually used");
     }
 }
 
-impl<Id, M, Size, Cost> Vertex<Id, M, Size, Cost>
+impl<Id, M, Size> Vertex<Id, M, Size>
 where
     Id: Key,
-    M: MorphismMeta<Size, Cost>,
-    Size: Clone, //todo size where?
-    Cost: Zero,
+    M: MorphismMeta,
+    Size: Clone,
 {
-    pub fn successors<Object: HasId<Id>>(
+    pub fn successors<Object: HasId<Id>, Cost: Zero>(
         &self,
-        category: &Category<Id, M, Object, Size, Cost>,
-    ) -> Vec<(Vertex<Id, M, Size, Cost>, Cost)> {
+        category: &Category<Id, M, Object, Cost>,
+    ) -> Vec<(Vertex<Id, M, Size>, Cost)> where M: ApplyMorphism<Size, Cost>,{
         match self {
             Vertex::Object { id, size } => category
                 .get_outbound(id)
@@ -109,9 +108,4 @@ where
             Vertex::Morphism { .. } => false,
         }
     }
-}
-
-pub enum KeyOrValue<K, V> {
-    Key(K),
-    Value(V),
 }

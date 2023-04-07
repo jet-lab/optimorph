@@ -17,25 +17,23 @@ pub trait Key: Eq + Hash + Debug + Clone {}
 impl<K: Eq + Hash + Debug + Clone> Key for K {}
 
 #[derive(Debug)]
-pub struct Category<Id, M, Object = Id, Size = Float, Cost = Float>
+pub struct Category<Id, M, Object = Id, Cost = Float>
 where
     Id: Key,
     Object: HasId<Id>,
-    M: MorphismMeta<Size, Cost>,
-    Size: Clone, //todo size where?
+    M: MorphismMeta,
 {
     objects: HashMap<Id, Rc<Object>>,
-    morphisms: HashSet<Morphism<Id, M, Size, Cost>>,
-    outbound: HashMap<Id, Vec<Morphism<Id, M, Size, Cost>>>,
+    morphisms: HashSet<Morphism<Id, M>>,
+    outbound: HashMap<Id, Vec<Morphism<Id, M>>>,
     _phantom: PhantomData<Cost>,
 }
 
-impl<Id, M, Object, Size, Cost> Clone for Category<Id, M, Object, Size, Cost>
+impl<Id, M, Object, Cost> Clone for Category<Id, M, Object, Cost>
 where
     Id: Key,
     Object: HasId<Id>,
-    M: MorphismMeta<Size, Cost>,
-    Size: Clone, //todo size where?
+    M: MorphismMeta,
 {
     fn clone(&self) -> Self {
         Self {
@@ -47,13 +45,12 @@ where
     }
 }
 
-impl<Id, M, Size, Cost> From<Vec<Morphism<Id, M, Size, Cost>>> for Category<Id, M, Id, Size, Cost>
+impl<Id, M, Cost> From<Vec<Morphism<Id, M>>> for Category<Id, M, Id, Cost>
 where
     Id: Key + HasId<Id>,
-    M: MorphismMeta<Size, Cost>,
-    Size: Clone, //todo size where?
+    M: MorphismMeta,
 {
-    fn from(morphisms: Vec<Morphism<Id, M, Size, Cost>>) -> Self {
+    fn from(morphisms: Vec<Morphism<Id, M>>) -> Self {
         let mut new = Self::new();
         for morphism in morphisms {
             new.objects
@@ -66,12 +63,11 @@ where
     }
 }
 
-impl<Id, M, Object, Size, Cost> Category<Id, M, Object, Size, Cost>
+impl<Id, M, Object, Cost> Category<Id, M, Object, Cost>
 where
     Id: Key,
     Object: HasId<Id>,
-    M: MorphismMeta<Size, Cost>,
-    Size: Clone, //todo size where?
+    M: MorphismMeta,
 {
     pub fn new() -> Self {
         Self {
@@ -84,7 +80,7 @@ where
 
     pub fn of(
         objects: impl IntoIterator<Item = Object>,
-        morphisms: impl IntoIterator<Item = Morphism<Id, M, Size, Cost>>,
+        morphisms: impl IntoIterator<Item = Morphism<Id, M>>,
     ) -> Result<Self, CategoryError> {
         let mut new = Self::new();
         new.add_objects(objects)?;
@@ -105,7 +101,7 @@ where
 
     pub fn add_morphisms(
         &mut self,
-        morphisms: impl IntoIterator<Item = Morphism<Id, M, Size, Cost>>,
+        morphisms: impl IntoIterator<Item = Morphism<Id, M>>,
     ) -> Result<(), CategoryError> {
         for morphism in morphisms {
             self.add_morphism(morphism)?;
@@ -130,7 +126,7 @@ where
 
     pub fn verify_morphism(
         &self,
-        morphism: &Morphism<Id, M, Size, Cost>,
+        morphism: &Morphism<Id, M>,
     ) -> Result<(), CategoryError> {
         if self.morphisms.contains(morphism) {
             return Err(AlreadyInserted);
@@ -151,14 +147,14 @@ where
 
     pub fn add_morphism(
         &mut self,
-        morphism: Morphism<Id, M, Size, Cost>,
+        morphism: Morphism<Id, M>,
     ) -> Result<(), CategoryError> {
         self.verify_morphism(&morphism)?;
         self.add_morphism_unchecked(morphism);
         Ok(())
     }
 
-    fn add_morphism_unchecked(&mut self, morphism: Morphism<Id, M, Size, Cost>) {
+    fn add_morphism_unchecked(&mut self, morphism: Morphism<Id, M>) {
         self.morphisms.insert(morphism.clone());
         match self.outbound.entry(morphism.source.clone()) {
             Entry::Occupied(mut x) => x.get_mut().push(morphism),
@@ -166,7 +162,7 @@ where
         }
     }
 
-    pub fn get_outbound(&self, id: &Id) -> Option<&Vec<Morphism<Id, M, Size, Cost>>> {
+    pub fn get_outbound(&self, id: &Id) -> Option<&Vec<Morphism<Id, M>>> {
         self.outbound.get(id)
     }
 
@@ -178,7 +174,7 @@ where
     //     self.objects.iter().map(Clone::clone)
     // }
 
-    pub fn morphisms(&self) -> hash_set::Iter<Morphism<Id, M, Size, Cost>> {
+    pub fn morphisms(&self) -> hash_set::Iter<Morphism<Id, M>> {
         self.morphisms.iter()
     }
 
@@ -186,8 +182,8 @@ where
         self,
     ) -> (
         HashMap<Id, Rc<Object>>,
-        HashSet<Morphism<Id, M, Size, Cost>>,
-        HashMap<Id, Vec<Morphism<Id, M, Size, Cost>>>,
+        HashSet<Morphism<Id, M>>,
+        HashMap<Id, Vec<Morphism<Id, M>>>,
     ) {
         (self.objects, self.morphisms, self.outbound)
     }
