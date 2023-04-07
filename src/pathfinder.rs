@@ -17,18 +17,18 @@ pub fn optimize_single_path_with_dijkstra<
     Cost: PathfindingCost,
 >(
     category: Category<Id, M, Object, Size, Cost>,
-    start: Id,
-    start_size: Size,
-    end: Id,
+    source: Id,
+    target: Id,
+    input_size: Size,
 ) -> Option<(Vec<Vertex<Id, M, Size, Cost>>, Cost)> {
     let start_vertex = Vertex::Object {
-        id: start,
-        size: start_size,
+        id: source,
+        size: input_size,
     };
     dijkstra(
         &start_vertex,
         move |n| n.successors(&category),
-        move |n| n.is_object_with_id(&end),
+        move |n| n.is_object_with_id(&target),
     )
 }
 

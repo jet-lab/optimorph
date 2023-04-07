@@ -120,8 +120,8 @@ fn asdaf2() {
     let x = optimize_single_path_with_dijkstra(
         get_positions(),
         PositionId::new(2),
-        1.into(),
         PositionId::new(0),
+        100.into(),
     );
 
     println!("{x:#?}");

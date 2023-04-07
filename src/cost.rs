@@ -55,7 +55,23 @@ impl FloatMeasure for Float {
     }
 }
 
-pub trait ApplyMorphism<Size = Float, Cost = Float> {
+/// Determines the outcome of applying a morphism to its input object of the
+/// provided Size. Outputs the Cost of this  and the Size of the target object
+/// after application.
+/// 
+/// # NON_NEGATIVE
+/// When true, the implementor promises that the Cost output will never be
+/// negative. This guarantee is necessary for most shortest-path optimizations
+/// algorithms to work properly, such as dijkstra.
+/// 
+/// The precise requirement is the following: For any two Sizes s1 and s2, the
+/// following must be true:
+/// * apply_non_negative(s1) + apply_non_negative(s2) >= s1
+/// * apply_non_negative(s1) + apply_non_negative(s2) >= s2
+/// 
+/// This guarantee cannot be provided by the compiler. Implement this trait at
+/// your own risk.
+pub trait ApplyMorphism<Size = Float, Cost = Float, const NON_NEGATIVE: bool = false> {
     fn apply(&self, input: Size) -> MorphismOutput<Size, Cost>;
 }
 

@@ -1,4 +1,4 @@
-use std::{collections::HashMap};
+use std::collections::HashMap;
 
 use petgraph::{
     algo::{bellman_ford, FloatMeasure},
@@ -16,157 +16,197 @@ use crate::{
 };
 
 #[test]
-fn pet() {
-    let mut g = Graph::new();
-    let other_deposit = g.add_node("other_deposit");
-    let deposit = g.add_node("deposit");
-    let loan = g.add_node("loan");
-    g.extend_with_edges(&[(other_deposit, deposit, 1.0), (deposit, loan, 0.0)]);
-    let x = bellman_ford(&g, other_deposit).unwrap();
-    println!("{x:?}");
-    println!("{:?}", x.distances[other_deposit.index()]);
-    let mut path = vec![];
-    let mut last = loan;
-    while last != other_deposit {
-        path.push(last);
-        last = x.predecessors[last.index()].unwrap();
-    }
+fn pet01() {
+    let category = get_positions();
+    let path = optimize(category, PositionId::new(2), PositionId::new(0), 100.into());
     println!("{path:#?}");
 }
 
-// struct CategoryGraph {
-//     graph: Graph,
-// }
-
-#[test]
-fn pet01() {
-    let cg = pet012(&get_positions(), 100.into());
-    let start_deposit = *cg.object_id_to_index.get(&PositionId::new(2)).unwrap();
-    let loan = *cg.object_id_to_index.get(&PositionId::new(0)).unwrap();
-    let x = bellman_ford(&cg.graph, start_deposit).unwrap();
-    println!("{x:?}");
-    println!("{:?}", x.distances[start_deposit.index()]);
+fn optimize<
+    Id: Key,
+    Object: HasId<Id>,
+    M: MorphismMeta<Size, Cost> + std::fmt::Debug,
+    Size: Clone + std::fmt::Debug,
+    Cost: FloatMeasure,
+>(
+    category: Category<Id, M, Object, Size, Cost>,
+    source: Id,
+    target: Id,
+    input_size: Size, // used for all morphisms - accumulation is not supported
+) -> Option<(Vec<Vertex<Id, M, Size, Cost>>, Cost)> {
+    let cg = CategoryGraph::new(&category, input_size);
+    let source_index = *cg.object_id_to_index.get(&source)?;
+    let target_index = *cg.object_id_to_index.get(&target)?;
+    let paths = match bellman_ford(&cg.graph, source_index) {
+        Ok(data) => data,
+        Err(_) => return None, //todo
+    };
     let mut path = vec![];
-    let mut last = loan;
-    while last != start_deposit {
+    let mut last = target_index;
+    while last != source_index {
         path.push(last);
-        last = x.predecessors[last.index()].unwrap();
+        last = paths.predecessors[last.index()]?;
     }
     path.push(last);
     path.reverse();
-    for item in path {
-        println!("{:#?}", cg.index_to_vertex.get(&item).unwrap());
-    }
-    // println!("{path:#?}");
+
+    Some((
+        path.into_iter()
+            .map(|idx| cg.index_to_vertex.get(&idx).cloned())
+            .collect::<Option<Vec<_>>>()
+            .unwrap(),
+        paths.distances[last.index()],
+    ))
 }
 
 struct CategoryGraph<Id, M, Size, Cost>
 where
     Id: Key,
-    // Object: HasId<Id>,
     M: MorphismMeta<Size, Cost>,
     Size: Clone, //todo size where?
+    Cost: FloatMeasure,
 {
     graph: Graph<Vertex<Id, M, Size, Cost>, Cost>,
     object_id_to_index: HashMap<Id, NodeIndex>,
     index_to_vertex: HashMap<NodeIndex, Vertex<Id, M, Size, Cost>>,
 }
 
-fn pet012<Id, M, Object, Size, Cost>(
-    category: &Category<Id, M, Object, Size, Cost>,
-    input_size: Size,
-) -> CategoryGraph<Id, M, Size, Cost>
+impl<Id, M, Size, Cost> CategoryGraph<Id, M, Size, Cost>
 where
     Id: Key,
-    Object: HasId<Id>,
     M: MorphismMeta<Size, Cost>,
     Size: Clone, //todo size where?
     Cost: FloatMeasure,
 {
-    let mut graph = Graph::new();
-    let (objects, morphisms, _) = category.clone().destruct();
-    let mut object_id_to_index = HashMap::new();
-    let mut morphism_to_index = HashMap::new();
-    let mut index_to_vertex = HashMap::new();
-    for object in objects.into_values() {
-        let index = graph.add_node(Vertex::Object {
-            id: object.id(),
-            size: input_size.clone(),
-        });
-        object_id_to_index.insert(object.id(), index);
-        index_to_vertex.insert(
-            index,
-            Vertex::Object {
+    fn new<Object: HasId<Id>>(
+        category: &Category<Id, M, Object, Size, Cost>,
+        input_size: Size,
+    ) -> CategoryGraph<Id, M, Size, Cost> {
+        let mut graph = Graph::new();
+        let (objects, morphisms, _) = category.clone().destruct();
+        let mut object_id_to_index = HashMap::new();
+        let mut morphism_to_index = HashMap::new();
+        let mut index_to_vertex = HashMap::new();
+        for object in objects.into_values() {
+            let index = graph.add_node(Vertex::Object {
                 id: object.id(),
                 size: input_size.clone(),
-            },
-        );
-    }
-    for morphism in &morphisms {
-        let index = graph.add_node(Vertex::Morphism {
-            inner: morphism.clone(),
-            input_size: input_size.clone(),
-        });
-        morphism_to_index.insert(morphism.clone(), index);
-        index_to_vertex.insert(
-            index,
-            Vertex::Morphism {
+            });
+            object_id_to_index.insert(object.id(), index);
+            index_to_vertex.insert(
+                index,
+                Vertex::Object {
+                    id: object.id(),
+                    size: input_size.clone(),
+                },
+            );
+        }
+        for morphism in &morphisms {
+            let index = graph.add_node(Vertex::Morphism {
                 inner: morphism.clone(),
                 input_size: input_size.clone(),
-            },
-        );
-    }
-    for morphism in morphisms {
-        let index = *morphism_to_index.get(&morphism).unwrap();
-        graph.extend_with_edges(&[
-            (
-                *object_id_to_index.get(&morphism.source).unwrap(),
+            });
+            morphism_to_index.insert(morphism.clone(), index);
+            index_to_vertex.insert(
                 index,
-                Cost::zero(),
-            ),
-            (
-                index,
-                *object_id_to_index.get(&morphism.target).unwrap(),
-                morphism.metadata.apply(input_size.clone()).cost,
-            ),
-        ]);
-    }
+                Vertex::Morphism {
+                    inner: morphism.clone(),
+                    input_size: input_size.clone(),
+                },
+            );
+        }
+        for morphism in morphisms {
+            let index = *morphism_to_index.get(&morphism).unwrap();
+            graph.extend_with_edges(&[
+                (
+                    *object_id_to_index.get(&morphism.source).unwrap(),
+                    index,
+                    Cost::zero(),
+                ),
+                (
+                    index,
+                    *object_id_to_index.get(&morphism.target).unwrap(),
+                    morphism.metadata.apply(input_size.clone()).cost,
+                ),
+            ]);
+        }
 
-    CategoryGraph {
-        graph,
-        object_id_to_index,
-        index_to_vertex,
-    }
-}
-
-#[test]
-fn pet2() {
-    let mut g = Graph::<&str, f64>::new();
-    let mut deposits = vec![];
-    for _ in 0..100 {
-        let deposit = g.add_node("some deposit");
-        let loan = g.add_node("some loan");
-        g.extend_with_edges(&[(deposit, loan, -1.0)]);
-        deposits.push(deposit);
-    }
-    for pair in deposits.windows(2) {
-        let &[d1, d2] = pair else { panic!() };
-        if d1 != d2 {
-            g.extend_with_edges(&[(d1, d2, 1.0)]);
+        CategoryGraph {
+            graph,
+            object_id_to_index,
+            index_to_vertex,
         }
     }
-
-    let x = bellman_ford(&g, deposits[0]).unwrap();
-    println!("{x:?}");
-    // println!("{:?}", x.distances[other_deposit.index()]);
-    // let mut path = vec![];
-    // let mut last = loan;
-    // while last != other_deposit {
-    //     path.push(last);
-    //     last = x.predecessors[last.index()].unwrap();
-    // }
-    // println!("{path:#?}");
 }
+
+// #[test]
+// fn pet01() {
+//     let cg = category_graph(&get_positions(), 100.into());
+//     let start_deposit = *cg.object_id_to_index.get(&PositionId::new(2)).unwrap();
+//     let loan = *cg.object_id_to_index.get(&PositionId::new(0)).unwrap();
+//     let x = bellman_ford(&cg.graph, start_deposit).unwrap();
+//     println!("{x:?}");
+//     println!("{:?}", x.distances[start_deposit.index()]);
+//     let mut path = vec![];
+//     let mut last = loan;
+//     while last != start_deposit {
+//         path.push(last);
+//         last = x.predecessors[last.index()].unwrap();
+//     }
+//     path.push(last);
+//     path.reverse();
+//     for item in path {
+//         println!("{:#?}", cg.index_to_vertex.get(&item).unwrap());
+//     }
+//     // println!("{path:#?}");
+// }
+// #[test]
+// fn pet() {
+//     let mut g = Graph::new();
+//     let other_deposit = g.add_node("other_deposit");
+//     let deposit = g.add_node("deposit");
+//     let loan = g.add_node("loan");
+//     g.extend_with_edges(&[(other_deposit, deposit, 1.0), (deposit, loan, 0.0)]);
+//     let x = bellman_ford(&g, other_deposit).unwrap();
+//     println!("{x:?}");
+//     println!("{:?}", x.distances[other_deposit.index()]);
+//     let mut path = vec![];
+//     let mut last = loan;
+//     while last != other_deposit {
+//         path.push(last);
+//         last = x.predecessors[last.index()].unwrap();
+//     }
+//     println!("{path:#?}");
+// }
+
+// #[test]
+// fn pet2() {
+//     let mut g = Graph::<&str, f64>::new();
+//     let mut deposits = vec![];
+//     for _ in 0..100 {
+//         let deposit = g.add_node("some deposit");
+//         let loan = g.add_node("some loan");
+//         g.extend_with_edges(&[(deposit, loan, -1.0)]);
+//         deposits.push(deposit);
+//     }
+//     for pair in deposits.windows(2) {
+//         let &[d1, d2] = pair else { panic!() };
+//         if d1 != d2 {
+//             g.extend_with_edges(&[(d1, d2, 1.0)]);
+//         }
+//     }
+
+//     let x = bellman_ford(&g, deposits[0]).unwrap();
+//     println!("{x:?}");
+//     // println!("{:?}", x.distances[other_deposit.index()]);
+//     // let mut path = vec![];
+//     // let mut last = loan;
+//     // while last != other_deposit {
+//     //     path.push(last);
+//     //     last = x.predecessors[last.index()].unwrap();
+//     // }
+//     // println!("{path:#?}");
+// }
 
 // const FREE: LiquidationCost = LiquidationCost {
 //     change_in_effective_collateral: OrderedFloat(0.0),
