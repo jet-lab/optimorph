@@ -5,6 +5,7 @@ use petgraph::{
     stable_graph::NodeIndex,
     Graph,
 };
+use thiserror::Error;
 
 use crate::{
     category::HasId,
@@ -26,24 +27,27 @@ pub fn shortest_single_path_with_bellman_ford<
     source: Id,
     target: Id,
     input_size: Size, // used for all morphisms - accumulation is not supported
-) -> Option<(Vec<Vertex<Id, M, Object, Size>>, Cost)> {
+) -> Result<Option<(Vec<Vertex<Id, M, Object, Size>>, Cost)>, PathFindingError<Id>> {
     let cg = CategoryGraph::new(category, input_size);
-    let source_index = *cg.object_id_to_index.get(&source)?;
-    let target_index = *cg.object_id_to_index.get(&target)?;
-    let paths = match bellman_ford(&cg.graph, source_index) {
-        Ok(data) => data,
-        Err(_) => return None, //todo
-    };
+    let source_index = *cg
+        .object_id_to_index
+        .get(&source)
+        .ok_or(MissingObject(source.clone()))?;
+    let target_index = *cg
+        .object_id_to_index
+        .get(&target)
+        .ok_or(MissingObject(target.clone()))?;
+    let paths = bellman_ford(&cg.graph, source_index).map_err(|_| NegativeCycle)?;
     let mut path = vec![];
     let mut last = target_index;
     while last != source_index {
         path.push(last);
-        last = paths.predecessors[last.index()]?;
+        last = paths.predecessors[last.index()].unwrap();
     }
     path.push(last);
     path.reverse();
 
-    Some((
+    Ok(Some((
         path.into_iter()
             .map(|idx| cg.index_to_vertex.get(&idx).cloned())
             .collect::<Option<Vec<_>>>()
@@ -52,8 +56,17 @@ pub fn shortest_single_path_with_bellman_ford<
             .map(|v| Vertex::from(v, category))
             .collect(),
         paths.distances[last.index()], // todo i think this is wrong
-    ))
+    )))
 }
+
+#[derive(Error, Debug)]
+pub enum PathFindingError<Id: std::fmt::Debug> {
+    #[error("The object could not be identified as a vertex in the underlying graph")]
+    MissingObject(Id),
+    #[error("There is a cycle of negative costs that prevent shortest path optimization")]
+    NegativeCycle,
+}
+use PathFindingError::*;
 
 struct CategoryGraph<Id, M, Size, Cost, const NON_NEGATIVE: bool>
 where

@@ -134,6 +134,7 @@ fn bellman_ford_petgraph() {
         PositionId::new(2),
         PositionId::new(0),
         100.into(),
-    );
+    )
+    .unwrap();
     println!("{path:#?}");
 }
