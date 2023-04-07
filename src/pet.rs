@@ -8,11 +8,12 @@ use petgraph::{
 
 use crate::{
     category::{Category, Key},
+    cost::ApplyMorphism,
     get_positions,
     morphism::MorphismMeta,
     object::HasId,
     vertex::Vertex,
-    PositionId, cost::ApplyMorphism,
+    PositionId,
 };
 
 #[test]
@@ -26,7 +27,7 @@ fn optimize<
     Id: Key,
     Object: HasId<Id>,
     M: MorphismMeta + ApplyMorphism<Size, Cost>,
-    Size: Clone + std::fmt::Debug,
+    Size: Clone,
     Cost: FloatMeasure,
 >(
     category: Category<Id, M, Object>,

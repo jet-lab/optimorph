@@ -1,4 +1,4 @@
-use std::{fmt::Debug, hash::Hash};
+use std::hash::Hash;
 
 use pathfinding::num_traits::Zero;
 
@@ -51,14 +51,8 @@ where
     M: MorphismMeta,
     Size: Clone,
 {
-    Object {
-        id: Id,
-        size: Size,
-    },
-    Morphism {
-        inner: Morphism<Id, M>,
-        input: Size,
-    },
+    Object { id: Id, size: Size },
+    Morphism { inner: Morphism<Id, M>, input: Size },
 }
 
 impl<Id, M, Size> Default for Vertex<Id, M, Size>
@@ -100,9 +94,10 @@ where
                     )
                 })
                 .collect(),
-            Vertex::Morphism { inner, input: input_size } => {
-                inner.successors(category, input_size.clone())
-            }
+            Vertex::Morphism {
+                inner,
+                input: input_size,
+            } => inner.successors(category, input_size.clone()),
         }
     }
 

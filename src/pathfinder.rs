@@ -1,4 +1,4 @@
-use std::{fmt::Debug, hash::Hash};
+use std::hash::Hash;
 
 use crate::category::Key;
 use crate::cost::ApplyMorphism;
@@ -33,13 +33,11 @@ pub fn optimize_single_path_with_dijkstra<
     )
 }
 
-pub trait PathfindingCost: Zero + Eq + Hash + Clone + Ord + Copy + Debug {}
-impl<T: Zero + Eq + Hash + Clone + Ord + Copy + Debug> PathfindingCost for T {}
+pub trait PathfindingCost: Zero + Eq + Hash + Clone + Ord + Copy {}
+impl<T: Zero + Eq + Hash + Clone + Ord + Copy> PathfindingCost for T {}
 
 pub trait PathfindingSize: Clone + Eq + Hash {}
 impl<T: Clone + Eq + Hash> PathfindingSize for T {}
-
-
 
 fn thing<T: Limiter<Selection = NonNegative>>(x: T) {}
 
