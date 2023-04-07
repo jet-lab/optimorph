@@ -57,12 +57,12 @@ where
     M: MorphismMeta,
     Size: Clone,
 {
-    pub fn successors<Object: HasId<Id>, Cost: Zero>(
+    pub fn successors<const NON_NEGATIVE: bool, Object: HasId<Id>, Cost: Zero>(
         &self,
         category: &Category<Id, M, Object>,
     ) -> Vec<(Vertex<Id, M, Size>, Cost)>
     where
-        M: ApplyMorphism<Size, Cost>,
+        M: ApplyMorphism<Size, Cost, NON_NEGATIVE>,
     {
         match self {
             Vertex::Object { id, size } => category

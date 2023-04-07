@@ -54,13 +54,13 @@ where
     }
 
     /// Needed for `pathfinding`
-    pub fn successors<Object: HasId<Id>, Size: Clone, Cost>(
+    pub fn successors<const NON_NEGATIVE: bool, Object: HasId<Id>, Size: Clone, Cost>(
         &self,
         category: &Category<Id, M, Object>,
         input_size: Size,
     ) -> Vec<(Vertex<Id, M, Size>, Cost)>
     where
-        M: ApplyMorphism<Size, Cost>,
+        M: ApplyMorphism<Size, Cost, NON_NEGATIVE>,
     {
         // todo find a way to get a compile-time guarantee that unwrap cannot fail
         // todo should apply have access to these states?

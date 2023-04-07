@@ -1,3 +1,13 @@
+Optimize for the lowest cost series of morphisms between any two objects.
+
+Can handle the basic case: every morphisms has equal cost, ordinary unweighted graph optimization
+
+Morphism cost can also be based on an abstract "size" of its input object with custom logic.
+
+You can optionally also have one (but not both) of these special behaviors:
+- object size may be dependent on prior morphisms in that path
+- morphism costs can be negative, allowing you to use it as a more abstract "score"
+
 # Graph vs Category?
 
 There are two layers of graphs.

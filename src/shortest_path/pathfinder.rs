@@ -13,7 +13,7 @@ use crate::category::Category;
 pub fn shortest_single_path_with_dijkstra<
     Id: Key,
     Object: HasId<Id>,
-    M: MorphismMeta + ApplyMorphism<Size, Cost>,
+    M: MorphismMeta + ApplyMorphism<Size, Cost, true>,
     Size: PathfindingSize,
     Cost: PathfindingCost,
 >(

@@ -35,7 +35,7 @@ impl std::hash::Hash for InstructionMeta {
         self.name.hash(state);
     }
 }
-impl ApplyMorphism for InstructionMeta {
+impl ApplyMorphism<Float, Float, true> for InstructionMeta {
     fn apply(&self, input: Float) -> MorphismOutput {
         self.logic.apply(input)
     }

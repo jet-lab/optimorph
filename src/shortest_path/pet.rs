@@ -15,9 +15,10 @@ use crate::{
 };
 
 pub fn shortest_single_path_with_bellman_ford<
+    const NON_NEGATIVE: bool,
     Id: Key,
     Object: HasId<Id>,
-    M: MorphismMeta + ApplyMorphism<Size, Cost>,
+    M: MorphismMeta + ApplyMorphism<Size, Cost, NON_NEGATIVE>,
     Size: Clone,
     Cost: FloatMeasure,
 >(
@@ -51,10 +52,10 @@ pub fn shortest_single_path_with_bellman_ford<
     ))
 }
 
-struct CategoryGraph<Id, M, Size, Cost>
+struct CategoryGraph<Id, M, Size, Cost, const NON_NEGATIVE: bool>
 where
     Id: Key,
-    M: MorphismMeta + ApplyMorphism<Size, Cost>,
+    M: MorphismMeta + ApplyMorphism<Size, Cost, NON_NEGATIVE>,
     Size: Clone,
     Cost: FloatMeasure,
 {
@@ -63,17 +64,17 @@ where
     index_to_vertex: HashMap<NodeIndex, Vertex<Id, M, Size>>,
 }
 
-impl<Id, M, Size, Cost> CategoryGraph<Id, M, Size, Cost>
+impl<Id, M, Size, Cost, const NON_NEGATIVE: bool> CategoryGraph<Id, M, Size, Cost, NON_NEGATIVE>
 where
     Id: Key,
-    M: MorphismMeta + ApplyMorphism<Size, Cost>,
+    M: MorphismMeta + ApplyMorphism<Size, Cost, NON_NEGATIVE>,
     Size: Clone,
     Cost: FloatMeasure,
 {
     fn new<Object: HasId<Id>>(
         category: &Category<Id, M, Object>,
         input_size: Size,
-    ) -> CategoryGraph<Id, M, Size, Cost> {
+    ) -> CategoryGraph<Id, M, Size, Cost, NON_NEGATIVE> {
         let mut graph = Graph::new();
         let (objects, morphisms, _) = category.clone().destruct();
         let mut object_id_to_index = HashMap::new();
