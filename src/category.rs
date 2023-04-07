@@ -60,6 +60,17 @@ where
     }
 }
 
+impl<Id, M, Object> Default for Category<Id, M, Object>
+where
+    Id: Key,
+    Object: HasId<Id>,
+    M: MorphismMeta,
+{
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<Id, M, Object> Category<Id, M, Object>
 where
     Id: Key,
@@ -131,7 +142,7 @@ where
         if self.objects.get(&morphism.target).is_none() {
             missing.push(format!("target: {:?}", morphism.target));
         }
-        if missing.len() > 0 {
+        if !missing.is_empty() {
             return Err(MissingNodes(missing));
         }
 

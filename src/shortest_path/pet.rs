@@ -7,23 +7,14 @@ use petgraph::{
 };
 
 use crate::{
-    category::{Category, Key},
-    cost::ApplyMorphism,
-    get_positions,
-    morphism::MorphismMeta,
     category::HasId,
+    category::{Category, Key},
+    morphism::ApplyMorphism,
+    morphism::MorphismMeta,
     vertex::Vertex,
-    PositionId,
 };
 
-#[test]
-fn pet01() {
-    let category = get_positions();
-    let path = optimize(category, PositionId::new(2), PositionId::new(0), 100.into());
-    println!("{path:#?}");
-}
-
-fn optimize<
+pub fn shortest_single_path_with_bellman_ford<
     Id: Key,
     Object: HasId<Id>,
     M: MorphismMeta + ApplyMorphism<Size, Cost>,
@@ -56,7 +47,7 @@ fn optimize<
             .map(|idx| cg.index_to_vertex.get(&idx).cloned())
             .collect::<Option<Vec<_>>>()
             .unwrap(),
-        paths.distances[last.index()],
+        paths.distances[last.index()], // todo i think this is wrong
     ))
 }
 
