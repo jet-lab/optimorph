@@ -1,22 +1,19 @@
-use std::{fmt::Debug, hash::Hash, marker::PhantomData, rc::Rc};
-
-use petgraph::IntoWeightedEdge;
+use std::{fmt::Debug, hash::Hash, marker::PhantomData};
 
 use crate::{
     category::{Category, Key},
-    cost::{ApplyMorphism, Float, MorphismOutput},
-    object::Object,
+    cost::{ApplyMorphism, Float},
+    object::HasId,
     vertex::Vertex,
 };
 
 //todo generic over Cost (not Size)
-pub trait MorphismMeta<Size, Cost>: Hash + Debug + Clone + Eq + ApplyMorphism<Size, Cost> {}
+pub trait MorphismMeta<Size, Cost>: Hash + Clone + Eq + ApplyMorphism<Size, Cost> {}
 impl<Size, Cost, M> MorphismMeta<Size, Cost> for M where
-    M: Hash + Debug + Clone + Eq + ApplyMorphism<Size, Cost>
+    M: Hash + Clone + Eq + ApplyMorphism<Size, Cost>
 {
 }
 
-#[derive(Debug)]
 pub struct Morphism<Id, M, Size = Float, Cost = Float>
 where
     Id: Key,
@@ -31,13 +28,23 @@ where
     ///   must be unique.
     /// - Logic to determine cost and output size from applying the morphism.
     pub metadata: M,
-    /// - for static used with one start position, set to start position size
-    /// - for static used with any start position, this doesn't work super
-    ///   great. set to 1 or the average of all position sizes or whatever i
-    ///   dunno
-    /// - for dynamic it doesn't matter, you can set to zero
-    pub input_size: Size,  //todo size where?
-    pub _phantom: PhantomData<Cost>,
+    pub _phantom_cost: PhantomData<Cost>,
+    pub _phantom_size: PhantomData<Size>,
+}
+
+impl<Id, M, Size, Cost> Debug for Morphism<Id, M, Size, Cost>
+where
+    Id: Key,
+    M: MorphismMeta<Size, Cost> + Debug,
+    Size: Clone, //todo size where?
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Morphism")
+            .field("source", &self.source)
+            .field("target", &self.target)
+            .field("metadata", &self.metadata)
+            .finish()
+    }
 }
 
 impl<Id, M, Size, Cost> Clone for Morphism<Id, M, Size, Cost>
@@ -51,8 +58,8 @@ where
             source: self.source.clone(),
             target: self.target.clone(),
             metadata: self.metadata.clone(),
-            input_size: self.input_size.clone(),
-            _phantom: PhantomData,
+            _phantom_cost: PhantomData,
+            _phantom_size: PhantomData,
         }
     }
 }
@@ -63,36 +70,36 @@ where
     M: MorphismMeta<Size, Cost>,
     Size: Clone, //todo size where?
 {
+    pub fn new(source: Id, target: Id, metadata: M) -> Self {
+        Self {
+            source,
+            target,
+            metadata,
+            _phantom_cost: PhantomData,
+            _phantom_size: PhantomData,
+        }
+    }
+
     /// Needed for `pathfinding`
-    pub fn successors(
+    pub fn successors<Object: HasId<Id>>(
         &self,
-        category: &Category<Id, M, Size, Cost>,
+        category: &Category<Id, M, Object, Size, Cost>,
         input_size: Size,
     ) -> Vec<(Vertex<Id, M, Size, Cost>, Cost)> {
         // todo find a way to get a compile-time guarantee that unwrap cannot fail
-        let mut next_object = category.get_object(&self.target).unwrap().clone();
+        // todo should apply have access to these states?
+        let _input_object = category.get_object(&self.source).unwrap().clone();
+        let _output_object = category.get_object(&self.target).unwrap().clone();
         let output = self.metadata.apply(input_size);
         //todo configurable: replace by output, do not touch, set to constant
-        next_object.size = output.size;
-        vec![(Vertex::Object(next_object), output.cost)]
-    }
-}
-
-/// Needed for `petgraph`
-impl<Id, M, Size, Cost> IntoWeightedEdge<Cost> for Morphism<Id, M, Size, Cost>
-where
-    Id: Key,
-    M: MorphismMeta<Size, Cost>,
-    Size: Clone, //todo size where?
-{
-    type NodeId = Id;
-
-    fn into_weighted_edge(self) -> (Self::NodeId, Self::NodeId, Cost) {
-        (
-            self.source,
-            self.target,
-            self.metadata.apply(self.input_size).cost,
-        )
+        // next_object.size = output.size;
+        vec![(
+            Vertex::Object {
+                id: self.target.clone(),
+                size: output.size,
+            },
+            output.cost,
+        )]
     }
 }
 

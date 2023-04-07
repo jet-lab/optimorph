@@ -1,6 +1,5 @@
-use std::{collections::HashMap, ops::Add};
+use std::{collections::HashMap};
 
-use ordered_float::OrderedFloat;
 use petgraph::{
     algo::{bellman_ford, FloatMeasure},
     stable_graph::NodeIndex,
@@ -9,9 +8,9 @@ use petgraph::{
 
 use crate::{
     category::{Category, Key},
-    cost::{ApplyMorphism},
     get_positions,
     morphism::MorphismMeta,
+    object::HasId,
     vertex::Vertex,
     PositionId,
 };
@@ -64,6 +63,7 @@ fn pet01() {
 struct CategoryGraph<Id, M, Size, Cost>
 where
     Id: Key,
+    // Object: HasId<Id>,
     M: MorphismMeta<Size, Cost>,
     Size: Clone, //todo size where?
 {
@@ -72,9 +72,13 @@ where
     index_to_vertex: HashMap<NodeIndex, Vertex<Id, M, Size, Cost>>,
 }
 
-fn pet012<Id, M, Size, Cost>(category: &Category<Id, M, Size, Cost>, input_size: Size) -> CategoryGraph<Id, M, Size, Cost>
+fn pet012<Id, M, Object, Size, Cost>(
+    category: &Category<Id, M, Object, Size, Cost>,
+    input_size: Size,
+) -> CategoryGraph<Id, M, Size, Cost>
 where
     Id: Key,
+    Object: HasId<Id>,
     M: MorphismMeta<Size, Cost>,
     Size: Clone, //todo size where?
     Cost: FloatMeasure,
@@ -85,9 +89,18 @@ where
     let mut morphism_to_index = HashMap::new();
     let mut index_to_vertex = HashMap::new();
     for object in objects.into_values() {
-        let index = graph.add_node(Vertex::Object(object.clone()));
-        object_id_to_index.insert(object.id.clone(), index);
-        index_to_vertex.insert(index, Vertex::Object(object));
+        let index = graph.add_node(Vertex::Object {
+            id: object.id(),
+            size: input_size.clone(),
+        });
+        object_id_to_index.insert(object.id(), index);
+        index_to_vertex.insert(
+            index,
+            Vertex::Object {
+                id: object.id(),
+                size: input_size.clone(),
+            },
+        );
     }
     for morphism in &morphisms {
         let index = graph.add_node(Vertex::Morphism {

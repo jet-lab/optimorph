@@ -1,29 +1,35 @@
 #![cfg(test)]
 
-use std::{marker::PhantomData, rc::Rc};
+use std::{fmt::Debug, rc::Rc};
 
-use cost::{ApplyMorphism, Float, DeductiveLinearCost, MorphismOutput};
+use cost::{ApplyMorphism, DeductiveLinearCost, Float, MorphismOutput};
 use morphism::Morphism;
-use object::Object;
-use pathfinding::prelude::dijkstra;
-use vertex::Vertex;
+use object::HasId;
 
-use crate::category::Category;
+use crate::{category::Category, pathfinder::optimize_single_path_with_dijkstra};
 
 mod category;
 mod cost;
 mod morphism;
 mod object;
+mod pathfinder;
 mod pet;
 mod vertex;
 
-type Position = Object<PositionId>;
 type Instruction = Morphism<PositionId, InstructionMeta>;
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 struct InstructionMeta {
     name: String,
     logic: Rc<dyn ApplyMorphism>,
+}
+
+impl Debug for InstructionMeta {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("InstructionMeta")
+            .field("name", &self.name)
+            .finish()
+    }
 }
 
 impl PartialEq for InstructionMeta {
@@ -57,6 +63,8 @@ impl PositionId {
     }
 }
 
+self_identify!(PositionId);
+
 enum PositionVariant {
     Only,
     FixedTermClaim(FixedTermClaim),
@@ -70,115 +78,51 @@ enum FixedTermClaim {
 }
 
 fn get_positions() -> Category<PositionId, InstructionMeta> {
-    let loan = Position::new(PositionId::new(0), 1.into());
-    let deposit = Position::new(PositionId::new(1), 1.into());
-    let other_deposit = Position::new(PositionId::new(2), 1.into());
-    let repay_loan = Instruction {
-        source: PositionId::new(1),
-        target: PositionId::new(0),
-        metadata: InstructionMeta {
+    let repay_loan = Instruction::new(
+        PositionId::new(1),
+        PositionId::new(0),
+        InstructionMeta {
             name: "repay".to_owned(),
             logic: Rc::new(DeductiveLinearCost {
                 m: 1.into(),
                 b: 1.into(),
             }),
         },
-        input_size: 0.into(),
-        _phantom: PhantomData,
-    };
-    let swap1to2 = Instruction {
-        source: PositionId::new(1),
-        target: PositionId::new(2),
-        metadata: InstructionMeta {
+    );
+    let swap1to2 = Instruction::new(
+        PositionId::new(1),
+        PositionId::new(2),
+        InstructionMeta {
             name: "repay".to_owned(),
             logic: Rc::new(DeductiveLinearCost {
                 m: 10.into(),
                 b: 10.into(),
             }),
         },
-        input_size: 0.into(),
-        _phantom: PhantomData,
-    };
-    let swap2to1 = Instruction {
-        source: PositionId::new(2),
-        target: PositionId::new(1),
-        metadata: InstructionMeta {
+    );
+    let swap2to1 = Instruction::new(
+        PositionId::new(2),
+        PositionId::new(1),
+        InstructionMeta {
             name: "repay".to_owned(),
             logic: Rc::new(DeductiveLinearCost {
                 m: 10.into(),
                 b: 10.into(),
             }),
         },
-        input_size: 0.into(),
-        _phantom: PhantomData,
-    };
+    );
 
-    let category = Category::of(
-        vec![loan, deposit, other_deposit],
-        vec![repay_loan, swap1to2, swap2to1],
-    )
-    .unwrap();
-
-    category
+    vec![repay_loan, swap1to2, swap2to1].into()
 }
 
 #[test]
 fn asdaf2() {
-    let category = get_positions();
-    let other_deposit = Vertex::Object(category.get_object(&PositionId::new(2)).unwrap().clone());
-    let x = dijkstra(
-        &other_deposit,
-        move |n| n.successors(&category),
-        move |n| n.is_object_with_id(&PositionId::new(0)),
+    let x = optimize_single_path_with_dijkstra(
+        get_positions(),
+        PositionId::new(2),
+        1.into(),
+        PositionId::new(0),
     );
 
     println!("{x:#?}");
 }
-
-fn thing<T: Limiter<Selection = NonNegative>>(x: T) {}
-
-struct LimitMe;
-
-impl Limiter for LimitMe {
-    type Selection = NonNegative;
-}
-
-trait Limiter {
-    type Selection;
-}
-
-// trait SelectMe{}
-struct NonNegative;
-struct NonComposable;
-
-
-
-/*
-dijkstra: 
-- requires non-negative cost
-- allows size accumulation
-
-bellman_ford:
-- allows negative cost
-- ignores size accumulation
-
-generic optimization method:
-- if cost can be negative, use bellman_ford
-- if cost cannot be negative, use dijkstra
-
-specific optimization methods:
-- with_size_accumulation - dijkstra requires non-negative
-- allowing_negative_cost - bellman_ford works with anything but comes with a caveat in the name or docs
-
-trait CostMeta {
-    const IS_NEGATABLE: bool;
-}
-
-unsafe trait NeverNegative
-- type constraint on dijkstra
-- impl Negatable with false
-
- */
-
-
-

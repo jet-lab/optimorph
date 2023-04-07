@@ -1,12 +1,11 @@
-use std::{fmt::Debug, hash::Hash, rc::Rc};
+use std::{fmt::Debug, hash::Hash};
 
 use pathfinding::num_traits::Zero;
 
 use crate::{
     category::{Category, Key},
-    cost::ApplyMorphism,
     morphism::{Morphism, MorphismMeta},
-    object::Object,
+    object::HasId,
 };
 
 /// There are two layers of graphs.
@@ -51,7 +50,10 @@ where
     M: MorphismMeta<Size, Cost>,
     Size: Clone, //todo size where?
 {
-    Object(Object<Id, Size>),
+    Object {
+        id: Id,
+        size: Size,
+    },
     Morphism {
         inner: Morphism<Id, M, Size, Cost>,
         input_size: Size,
@@ -65,7 +67,7 @@ where
     Size: Clone, //todo size where?
 {
     fn default() -> Self {
-        panic!("do not use this. it makes no sense. this is only provided to satisfy annoying trait bounds that are not actually used");
+        panic!("do not use this. it makes no sense. this is only implemented to satisfy annoying trait bounds that are not actually used");
     }
 }
 
@@ -76,12 +78,25 @@ where
     Size: Clone, //todo size where?
     Cost: Zero,
 {
-    pub fn successors(
+    pub fn successors<Object: HasId<Id>>(
         &self,
-        category: &Category<Id, M, Size, Cost>,
+        category: &Category<Id, M, Object, Size, Cost>,
     ) -> Vec<(Vertex<Id, M, Size, Cost>, Cost)> {
         match self {
-            Vertex::Object(o) => o.successors(category),
+            Vertex::Object { id, size } => category
+                .get_outbound(id)
+                .unwrap() //todo
+                .iter()
+                .map(|m| {
+                    (
+                        Vertex::Morphism {
+                            inner: m.clone(),
+                            input_size: size.clone(),
+                        },
+                        Cost::zero(),
+                    )
+                })
+                .collect(),
             Vertex::Morphism { inner, input_size } => {
                 inner.successors(category, input_size.clone())
             }
@@ -90,7 +105,7 @@ where
 
     pub fn is_object_with_id(&self, id: &Id) -> bool {
         match self {
-            Vertex::Object(o) => &o.id == id,
+            Vertex::Object { id: inner, .. } => &inner.clone() == id,
             Vertex::Morphism { .. } => false,
         }
     }
