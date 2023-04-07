@@ -1,20 +1,14 @@
 difficult design decisions
 
-## require Clone vs Rc<Morphism> vs Rc<MorphismMeta>?
-require Clone:
-- definer of the type knows the most about the type and whether it needs to be reference counted
-Rc<Morphism>
-- simple user interface
-- prevents user from accidentally encouraging the cloning huge data structures
-Rc<MorphismMeta>
-- simple user interface if there is a constructor
-- prevents user from accidentally encouraging the cloning huge data structures
-
+# Undecided
+see todos in code
 
 # Decided
 These dilemmas are considered settled for now, but may be revisited. The content here may be out of date since a superior approach was found to any of these options.
 
 ## terminology for the top layer of abstraction - graphs vs categories
+conclusion: category
+----
 graph pros:
 - this is the language people are probably already thinking about when considering shortest-path optimizations, because those algorithms are typically conceptualized in the context of graph theory, not category theory.
 
@@ -32,6 +26,8 @@ cons:
 - weird naming where everything needs "Multi" in the name even though that particular data type may not actually represent anything that is internally "multiple"
 
 ## where to put size information?
+conclusion: enum
+----
 in the struct
 - morphism method has less inputs
 - enables an accumulation mode where input size is combined with initial object sizes
@@ -50,6 +46,8 @@ cons:
 - cumbersome to explicitly carry around a floating value everywhere
 
 ## accept HasId instead of Id?
+conclusion: decided to accept HasId since a lot of other trait bounds were being simplified for other reasons and this gives some nice flexibility. the optimization algorithms only pass around the Id, so we don't need to worry about copying a heavy object anywhere
+----
 pros:
 - clients don't need to have their own map and can reuse the output
 - ultimate flexibility
@@ -69,3 +67,16 @@ Score can be negative
 Cost cannot be negative
 
 you can optimize for Cost using dijkstra
+
+
+## require Clone vs Rc<Morphism> vs Rc<MorphismMeta>?
+conclusion: decided to make the MorphismMeta field Rc
+----
+require Clone:
+- definer of the type knows the most about the type and whether it needs to be reference counted
+Rc<Morphism>
+- simple user interface
+- prevents user from accidentally encouraging the cloning huge data structures
+Rc<MorphismMeta>
+- simple user interface if there is a constructor
+- prevents user from accidentally encouraging the cloning huge data structures

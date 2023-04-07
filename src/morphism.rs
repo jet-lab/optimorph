@@ -1,4 +1,4 @@
-use std::hash::Hash;
+use std::{hash::Hash, rc::Rc};
 
 use crate::{
     category::{Category, HasId, Key},
@@ -6,10 +6,10 @@ use crate::{
     vertex::Vertex,
 };
 
-pub trait MorphismMeta: Hash + Clone + Eq {}
-impl<M> MorphismMeta for M where M: Hash + Clone + Eq {}
+pub trait MorphismMeta: Hash + Eq {}
+impl<M> MorphismMeta for M where M: Hash + Eq {}
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct Morphism<Id, M>
 where
     Id: Key,
@@ -23,7 +23,21 @@ where
     ///   must be unique.
     /// - Logic to determine cost and output size from applying the morphism. It
     ///   should implement some variant of ApplyMorphism in order to be useful.
-    pub metadata: M,
+    pub metadata: Rc<M>,
+}
+
+impl<Id, M> Clone for Morphism<Id, M>
+where
+    Id: Key,
+    M: MorphismMeta,
+{
+    fn clone(&self) -> Self {
+        Self {
+            source: self.source.clone(),
+            target: self.target.clone(),
+            metadata: self.metadata.clone(),
+        }
+    }
 }
 
 impl<Id, M> Morphism<Id, M>
@@ -35,7 +49,7 @@ where
         Self {
             source,
             target,
-            metadata,
+            metadata: Rc::new(metadata),
         }
     }
 
