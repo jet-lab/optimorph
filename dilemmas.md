@@ -4,7 +4,7 @@ difficult design decisions
 see todos in code
 
 # Decided
-These dilemmas are considered settled for now, but may be revisited. The content here may be out of date since a superior approach was found to any of these options.
+These dilemmas are considered settled for now, but may be revisited. The content here may be out of date if a superior approach was found to any of these options.
 
 ## terminology for the top layer of abstraction - graphs vs categories
 conclusion: category

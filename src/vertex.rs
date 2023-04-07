@@ -9,7 +9,7 @@ use crate::{
     morphism::{Morphism, MorphismMeta},
 };
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Debug, PartialEq, Eq, Hash)]
 pub enum Vertex<Id, M, Size>
 where
     Id: Key,
@@ -28,6 +28,26 @@ where
 {
     fn default() -> Self {
         panic!("do not use this. it makes no sense. this is only implemented to satisfy annoying trait bounds that are not actually used");
+    }
+}
+
+impl<Id, M, Size> Clone for Vertex<Id, M, Size>
+where
+    Id: Key,
+    M: MorphismMeta,
+    Size: Clone,
+{
+    fn clone(&self) -> Self {
+        match self {
+            Self::Object { id, size } => Self::Object {
+                id: id.clone(),
+                size: size.clone(),
+            },
+            Self::Morphism { inner, input } => Self::Morphism {
+                inner: inner.clone(),
+                input: input.clone(),
+            },
+        }
     }
 }
 
