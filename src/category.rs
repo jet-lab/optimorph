@@ -11,6 +11,7 @@ use crate::{
     morphism::{Morphism, MorphismMeta},
 };
 
+/// todo should Id be an associated type?
 pub trait HasId<Id: Key> {
     fn id(&self) -> Id;
 }

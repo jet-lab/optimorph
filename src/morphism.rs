@@ -3,7 +3,7 @@ use std::{hash::Hash, rc::Rc};
 use crate::{
     category::{Category, HasId, Key},
     impls::Float,
-    vertex::Vertex,
+    vertex::LeanVertex,
 };
 
 pub trait MorphismMeta: Hash + Eq {}
@@ -54,11 +54,11 @@ where
     }
 
     /// Needed for `pathfinding`
-    pub fn successors<const NON_NEGATIVE: bool, Object: HasId<Id>, Size: Clone, Cost>(
+    pub(crate) fn successors<const NON_NEGATIVE: bool, Object: HasId<Id>, Size: Clone, Cost>(
         &self,
         category: &Category<Id, M, Object>,
         input_size: Size,
-    ) -> Vec<(Vertex<Id, M, Size>, Cost)>
+    ) -> Vec<(LeanVertex<Id, M, Size>, Cost)>
     where
         M: ApplyMorphism<Size, Cost, NON_NEGATIVE>,
     {
@@ -70,7 +70,7 @@ where
         //todo configurable: replace by output, do not touch, set to constant
         // next_object.size = output.size;
         vec![(
-            Vertex::Object {
+            LeanVertex::Object {
                 id: self.target.clone(),
                 size: output.size,
             },

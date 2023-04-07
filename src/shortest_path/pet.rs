@@ -11,7 +11,7 @@ use crate::{
     category::{Category, Key},
     morphism::ApplyMorphism,
     morphism::MorphismMeta,
-    vertex::Vertex,
+    vertex::{LeanVertex, Vertex},
 };
 
 pub fn shortest_single_path_with_bellman_ford<
@@ -22,12 +22,12 @@ pub fn shortest_single_path_with_bellman_ford<
     Size: Clone,
     Cost: FloatMeasure,
 >(
-    category: Category<Id, M, Object>,
+    category: &Category<Id, M, Object>,
     source: Id,
     target: Id,
     input_size: Size, // used for all morphisms - accumulation is not supported
-) -> Option<(Vec<Vertex<Id, M, Size>>, Cost)> {
-    let cg = CategoryGraph::new(&category, input_size);
+) -> Option<(Vec<Vertex<Id, M, Object, Size>>, Cost)> {
+    let cg = CategoryGraph::new(category, input_size);
     let source_index = *cg.object_id_to_index.get(&source)?;
     let target_index = *cg.object_id_to_index.get(&target)?;
     let paths = match bellman_ford(&cg.graph, source_index) {
@@ -47,7 +47,10 @@ pub fn shortest_single_path_with_bellman_ford<
         path.into_iter()
             .map(|idx| cg.index_to_vertex.get(&idx).cloned())
             .collect::<Option<Vec<_>>>()
-            .unwrap(),
+            .unwrap() // todo
+            .into_iter()
+            .map(|v| Vertex::from(v, category))
+            .collect(),
         paths.distances[last.index()], // todo i think this is wrong
     ))
 }
@@ -59,9 +62,9 @@ where
     Size: Clone,
     Cost: FloatMeasure,
 {
-    graph: Graph<Vertex<Id, M, Size>, Cost>,
+    graph: Graph<LeanVertex<Id, M, Size>, Cost>,
     object_id_to_index: HashMap<Id, NodeIndex>,
-    index_to_vertex: HashMap<NodeIndex, Vertex<Id, M, Size>>,
+    index_to_vertex: HashMap<NodeIndex, LeanVertex<Id, M, Size>>,
 }
 
 impl<Id, M, Size, Cost, const NON_NEGATIVE: bool> CategoryGraph<Id, M, Size, Cost, NON_NEGATIVE>
@@ -81,28 +84,28 @@ where
         let mut morphism_to_index = HashMap::new();
         let mut index_to_vertex = HashMap::new();
         for object in objects.into_values() {
-            let index = graph.add_node(Vertex::Object {
+            let index = graph.add_node(LeanVertex::Object {
                 id: object.id(),
                 size: input_size.clone(),
             });
             object_id_to_index.insert(object.id(), index);
             index_to_vertex.insert(
                 index,
-                Vertex::Object {
+                LeanVertex::Object {
                     id: object.id(),
                     size: input_size.clone(),
                 },
             );
         }
         for morphism in &morphisms {
-            let index = graph.add_node(Vertex::Morphism {
+            let index = graph.add_node(LeanVertex::Morphism {
                 inner: morphism.clone(),
                 input: input_size.clone(),
             });
             morphism_to_index.insert(morphism.clone(), index);
             index_to_vertex.insert(
                 index,
-                Vertex::Morphism {
+                LeanVertex::Morphism {
                     inner: morphism.clone(),
                     input: input_size.clone(),
                 },
@@ -233,7 +236,7 @@ where
 
 // impl PartialOrd for LiquidationCost {
 //     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-//         todo!()
+//         tada!()
 //     }
 // }
 

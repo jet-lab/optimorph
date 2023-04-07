@@ -48,7 +48,7 @@ fn get_positions() -> Category<PositionId, InstructionMeta> {
 #[test]
 fn dijkstra_pathfinding() {
     let x = shortest_single_path_with_accumulating_sizes(
-        get_positions(),
+        &get_positions(),
         PositionId::new(2),
         PositionId::new(0),
         100.into(),
@@ -60,7 +60,7 @@ fn dijkstra_pathfinding() {
 #[test]
 fn bellman_ford_petgraph() {
     let path = shortest_single_path_allowing_negative_cost(
-        get_positions(),
+        &get_positions(),
         PositionId::new(2),
         PositionId::new(0),
         100.into(),

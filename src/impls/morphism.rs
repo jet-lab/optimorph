@@ -11,8 +11,8 @@ pub struct SimpleMorphism<Meta = String, Logic = ConstantCost>
 where
     Meta: MorphismMeta,
 {
-    /// This should sufficiently unique to distinguish the morphism from other
-    /// morphisms with the same source and target.
+    /// This should be sufficiently unique to distinguish the morphism from
+    /// other morphisms that have the same source and target.
     pub meta: Meta,
     pub logic: Logic,
 }
