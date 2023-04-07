@@ -3,7 +3,7 @@ use std::hash::Hash;
 use crate::category::Key;
 use crate::cost::ApplyMorphism;
 use crate::morphism::MorphismMeta;
-use crate::object::HasId;
+use crate::category::HasId;
 use crate::vertex::Vertex;
 use pathfinding::num_traits::Zero;
 use pathfinding::prelude::dijkstra;

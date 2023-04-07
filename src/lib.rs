@@ -2,16 +2,15 @@
 
 use std::{fmt::Debug, rc::Rc};
 
+use category::HasId;
 use cost::{ApplyMorphism, DeductiveLinearCost, Float, MorphismOutput};
 use morphism::Morphism;
-use object::HasId;
 
 use crate::{category::Category, pathfinder::optimize_single_path_with_dijkstra};
 
-mod category;
+pub mod category;
 mod cost;
-mod morphism;
-mod object;
+pub mod morphism;
 mod pathfinder;
 mod pet;
 mod vertex;
@@ -49,7 +48,7 @@ impl ApplyMorphism for InstructionMeta {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Default)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Default)]
 pub struct PositionId {
     position_token_mint: u64,
     variant: u8,
@@ -63,7 +62,11 @@ impl PositionId {
     }
 }
 
-self_identify!(PositionId);
+impl HasId<PositionId> for PositionId {
+    fn id(&self) -> PositionId {
+        *self
+    }
+}
 
 enum PositionVariant {
     Only,

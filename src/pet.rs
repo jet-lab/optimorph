@@ -11,7 +11,7 @@ use crate::{
     cost::ApplyMorphism,
     get_positions,
     morphism::MorphismMeta,
-    object::HasId,
+    category::HasId,
     vertex::Vertex,
     PositionId,
 };

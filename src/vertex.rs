@@ -6,7 +6,7 @@ use crate::{
     category::{Category, Key},
     cost::ApplyMorphism,
     morphism::{Morphism, MorphismMeta},
-    object::HasId,
+    category::HasId,
 };
 
 /// There are two layers of graphs.

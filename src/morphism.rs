@@ -1,9 +1,8 @@
 use std::hash::Hash;
 
 use crate::{
-    category::{Category, Key},
+    category::{Category, Key, HasId},
     cost::ApplyMorphism,
-    object::HasId,
     vertex::Vertex,
 };
 

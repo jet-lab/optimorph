@@ -6,10 +6,11 @@ use std::{
 };
 use thiserror::Error;
 
-use crate::{
-    morphism::{Morphism, MorphismMeta},
-    object::HasId,
-};
+use crate::morphism::{Morphism, MorphismMeta};
+
+pub trait HasId<Id: Key> {
+    fn id(&self) -> Id;
+}
 
 pub trait Key: Eq + Hash + Debug + Clone {}
 impl<K: Eq + Hash + Debug + Clone> Key for K {}
@@ -119,10 +120,7 @@ where
         Ok(())
     }
 
-    pub fn verify_morphism(
-        &self,
-        morphism: &Morphism<Id, M>,
-    ) -> Result<(), CategoryError> {
+    pub fn verify_morphism(&self, morphism: &Morphism<Id, M>) -> Result<(), CategoryError> {
         if self.morphisms.contains(morphism) {
             return Err(AlreadyInserted);
         }
@@ -140,10 +138,7 @@ where
         Ok(())
     }
 
-    pub fn add_morphism(
-        &mut self,
-        morphism: Morphism<Id, M>,
-    ) -> Result<(), CategoryError> {
+    pub fn add_morphism(&mut self, morphism: Morphism<Id, M>) -> Result<(), CategoryError> {
         self.verify_morphism(&morphism)?;
         self.add_morphism_unchecked(morphism);
         Ok(())
