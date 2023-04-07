@@ -1,5 +1,3 @@
-#![cfg(test)]
-
 use std::{fmt::Debug, rc::Rc};
 
 use crate::category::HasId;
@@ -13,7 +11,7 @@ type Instruction = Morphism<PositionId, InstructionMeta>;
 #[derive(Clone)]
 struct InstructionMeta {
     name: String,
-    logic: Rc<dyn ApplyMorphism>,
+    logic: Rc<dyn ApplyMorphism<Float, Float, true>>,
 }
 
 impl Debug for InstructionMeta {

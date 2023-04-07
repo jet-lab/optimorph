@@ -1,3 +1,4 @@
+use std::fmt::Debug;
 use std::hash::{Hash, Hasher};
 
 use crate::morphism::{ApplyMorphism, MorphismMeta, MorphismOutput};
@@ -5,6 +6,7 @@ use crate::morphism::{ApplyMorphism, MorphismMeta, MorphismOutput};
 use super::Float;
 
 /// This can be used as the metadata field in Morphism.
+#[derive(Debug)]
 pub struct SimpleMorphism<Meta = String, Logic = ConstantCost>
 where
     Meta: MorphismMeta,
@@ -36,10 +38,11 @@ impl SimpleMorphism {
     }
 }
 
-impl<Size, Cost, Meta, Logic> ApplyMorphism<Size, Cost> for SimpleMorphism<Meta, Logic>
+impl<Size, Cost, Meta, Logic, const NON_NEGATIVE: bool> ApplyMorphism<Size, Cost, NON_NEGATIVE>
+    for SimpleMorphism<Meta, Logic>
 where
     Meta: MorphismMeta,
-    Logic: ApplyMorphism<Size, Cost>,
+    Logic: ApplyMorphism<Size, Cost, NON_NEGATIVE>,
 {
     fn apply(&self, input: Size) -> MorphismOutput<Size, Cost> {
         self.logic.apply(input)
@@ -52,7 +55,7 @@ pub struct DeductiveLinearCost {
     pub constant: Float,
 }
 
-impl ApplyMorphism<Float, Float> for DeductiveLinearCost {
+impl ApplyMorphism<Float, Float, true> for DeductiveLinearCost {
     fn apply(&self, input: Float) -> MorphismOutput<Float, Float> {
         let cost = self.rate * input + self.constant;
         MorphismOutput {
@@ -66,7 +69,7 @@ impl ApplyMorphism<Float, Float> for DeductiveLinearCost {
 /// Every morphism is always a cost of 1, for a basic unweighted graph.
 pub struct ConstantCost;
 
-impl ApplyMorphism<(), Float> for ConstantCost {
+impl ApplyMorphism<(), Float, true> for ConstantCost {
     fn apply(&self, _input: ()) -> MorphismOutput<(), Float> {
         MorphismOutput {
             size: (),
