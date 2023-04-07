@@ -1,12 +1,14 @@
 Optimize for the lowest cost series of morphisms between any two objects.
 
-Can handle the basic case: every morphisms has equal cost, ordinary unweighted graph optimization
+Can handle the basic case where every morphism has equal cost. This is an ordinary shortest-path optimization of unweighted directed multigraph.
 
-Morphism cost can also be based on an abstract "size" of its input object with custom logic.
+Alternatively, different morphisms can have different costs. You can define a custom cost function that calculates the cost based on some arbitrary input "size".
 
 You can optionally also have one (but not both) of these special behaviors:
-- object size may be dependent on prior morphisms in that path
-- morphism costs can be negative, allowing you to use it as a more abstract "score"
+1. each morphism transforms the input size of its source object into an output size that acts as the size of the next object in that path.
+2. morphism costs can be negative, allowing you to use it as a more abstract "score" that can go up and down. be careful to avoid negative cycles, which make it impossible to find a path.
+
+You always specify some "input size" to the path optimizer. With option 1, it acts as the size of the first object only. With option 2, each morphism reuses this same exact "input size" as if it is the input it received from its source.
 
 # Graph vs Category?
 

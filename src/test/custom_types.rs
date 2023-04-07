@@ -1,10 +1,10 @@
 use std::{fmt::Debug, rc::Rc};
 
+use crate::category::Category;
 use crate::category::HasId;
 use crate::impls::{DeductiveLinearCost, Float};
 use crate::morphism::{ApplyMorphism, Morphism, MorphismOutput};
-use crate::shortest_path::pet::shortest_single_path_with_bellman_ford;
-use crate::{category::Category, shortest_path::pathfinder::shortest_single_path_with_dijkstra};
+use crate::shortest_path::*;
 
 type Instruction = Morphism<PositionId, InstructionMeta>;
 
@@ -117,7 +117,7 @@ fn get_positions() -> Category<PositionId, InstructionMeta> {
 
 #[test]
 fn dijkstra_pathfinding() {
-    let x = shortest_single_path_with_dijkstra(
+    let x = shortest_single_path_with_accumulating_sizes(
         get_positions(),
         PositionId::new(2),
         PositionId::new(0),
@@ -129,7 +129,7 @@ fn dijkstra_pathfinding() {
 
 #[test]
 fn bellman_ford_petgraph() {
-    let path = shortest_single_path_with_bellman_ford(
+    let path = shortest_single_path_allowing_negative_cost(
         get_positions(),
         PositionId::new(2),
         PositionId::new(0),
