@@ -29,7 +29,7 @@ fn optimize<
     Size: Clone + std::fmt::Debug,
     Cost: FloatMeasure,
 >(
-    category: Category<Id, M, Object, Cost>,
+    category: Category<Id, M, Object>,
     source: Id,
     target: Id,
     input_size: Size, // used for all morphisms - accumulation is not supported
@@ -79,7 +79,7 @@ where
     Cost: FloatMeasure,
 {
     fn new<Object: HasId<Id>>(
-        category: &Category<Id, M, Object, Cost>,
+        category: &Category<Id, M, Object>,
         input_size: Size,
     ) -> CategoryGraph<Id, M, Size, Cost> {
         let mut graph = Graph::new();
@@ -104,14 +104,14 @@ where
         for morphism in &morphisms {
             let index = graph.add_node(Vertex::Morphism {
                 inner: morphism.clone(),
-                input_size: input_size.clone(),
+                input: input_size.clone(),
             });
             morphism_to_index.insert(morphism.clone(), index);
             index_to_vertex.insert(
                 index,
                 Vertex::Morphism {
                     inner: morphism.clone(),
-                    input_size: input_size.clone(),
+                    input: input_size.clone(),
                 },
             );
         }

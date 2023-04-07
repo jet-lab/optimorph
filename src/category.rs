@@ -2,13 +2,11 @@ use std::{
     collections::{hash_map::Entry, hash_set, HashMap, HashSet},
     fmt::Debug,
     hash::Hash,
-    marker::PhantomData,
     rc::Rc,
 };
 use thiserror::Error;
 
 use crate::{
-    cost::Float,
     morphism::{Morphism, MorphismMeta},
     object::HasId,
 };
@@ -17,7 +15,7 @@ pub trait Key: Eq + Hash + Debug + Clone {}
 impl<K: Eq + Hash + Debug + Clone> Key for K {}
 
 #[derive(Debug)]
-pub struct Category<Id, M, Object = Id, Cost = Float>
+pub struct Category<Id, M, Object = Id>
 where
     Id: Key,
     Object: HasId<Id>,
@@ -26,10 +24,9 @@ where
     objects: HashMap<Id, Rc<Object>>,
     morphisms: HashSet<Morphism<Id, M>>,
     outbound: HashMap<Id, Vec<Morphism<Id, M>>>,
-    _phantom: PhantomData<Cost>,
 }
 
-impl<Id, M, Object, Cost> Clone for Category<Id, M, Object, Cost>
+impl<Id, M, Object> Clone for Category<Id, M, Object>
 where
     Id: Key,
     Object: HasId<Id>,
@@ -40,12 +37,11 @@ where
             objects: self.objects.clone(),
             morphisms: self.morphisms.clone(),
             outbound: self.outbound.clone(),
-            _phantom: PhantomData,
         }
     }
 }
 
-impl<Id, M, Cost> From<Vec<Morphism<Id, M>>> for Category<Id, M, Id, Cost>
+impl<Id, M> From<Vec<Morphism<Id, M>>> for Category<Id, M, Id>
 where
     Id: Key + HasId<Id>,
     M: MorphismMeta,
@@ -63,7 +59,7 @@ where
     }
 }
 
-impl<Id, M, Object, Cost> Category<Id, M, Object, Cost>
+impl<Id, M, Object> Category<Id, M, Object>
 where
     Id: Key,
     Object: HasId<Id>,
@@ -74,7 +70,6 @@ where
             objects: HashMap::new(),
             morphisms: HashSet::new(),
             outbound: HashMap::new(),
-            _phantom: PhantomData,
         }
     }
 

@@ -17,7 +17,7 @@ pub fn optimize_single_path_with_dijkstra<
     Size: PathfindingSize,
     Cost: PathfindingCost,
 >(
-    category: Category<Id, M, Object, Cost>,
+    category: Category<Id, M, Object>,
     source: Id,
     target: Id,
     input_size: Size,

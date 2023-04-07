@@ -4,8 +4,9 @@ use pathfinding::num_traits::Zero;
 
 use crate::{
     category::{Category, Key},
+    cost::ApplyMorphism,
     morphism::{Morphism, MorphismMeta},
-    object::HasId, cost::ApplyMorphism,
+    object::HasId,
 };
 
 /// There are two layers of graphs.
@@ -56,7 +57,7 @@ where
     },
     Morphism {
         inner: Morphism<Id, M>,
-        input_size: Size,
+        input: Size,
     },
 }
 
@@ -79,8 +80,11 @@ where
 {
     pub fn successors<Object: HasId<Id>, Cost: Zero>(
         &self,
-        category: &Category<Id, M, Object, Cost>,
-    ) -> Vec<(Vertex<Id, M, Size>, Cost)> where M: ApplyMorphism<Size, Cost>,{
+        category: &Category<Id, M, Object>,
+    ) -> Vec<(Vertex<Id, M, Size>, Cost)>
+    where
+        M: ApplyMorphism<Size, Cost>,
+    {
         match self {
             Vertex::Object { id, size } => category
                 .get_outbound(id)
@@ -90,13 +94,13 @@ where
                     (
                         Vertex::Morphism {
                             inner: m.clone(),
-                            input_size: size.clone(),
+                            input: size.clone(),
                         },
                         Cost::zero(),
                     )
                 })
                 .collect(),
-            Vertex::Morphism { inner, input_size } => {
+            Vertex::Morphism { inner, input: input_size } => {
                 inner.successors(category, input_size.clone())
             }
         }

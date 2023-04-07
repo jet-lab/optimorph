@@ -20,10 +20,11 @@ where
     pub source: Id,
     pub target: Id,
     /// This should contain:
-    /// - Uniquely identifying information, to distinguish this morphism from
+    /// - Uniquely identifying information that distinguishes this morphism from
     ///   other morphisms with the same source and target. Eq and Hash values
     ///   must be unique.
-    /// - Logic to determine cost and output size from applying the morphism.
+    /// - Logic to determine cost and output size from applying the morphism. It
+    ///   should implement some variant of ApplyMorphism in order to be useful.
     pub metadata: M,
 }
 
@@ -43,7 +44,7 @@ where
     /// Needed for `pathfinding`
     pub fn successors<Object: HasId<Id>, Size: Clone, Cost>(
         &self,
-        category: &Category<Id, M, Object, Cost>,
+        category: &Category<Id, M, Object>,
         input_size: Size,
     ) -> Vec<(Vertex<Id, M, Size>, Cost)>
     where
