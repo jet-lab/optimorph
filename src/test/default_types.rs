@@ -1,39 +1,50 @@
-use crate::category::Category;
-use crate::impls::{DeductiveLinearCost, SimpleMorphism};
+use crate::impls::{DeductiveLinearCost, Float, SimpleMorphism};
 use crate::morphism::Morphism;
 use crate::shortest_path::*;
+use crate::vertex::Vertex;
 
-type Instruction = Morphism<u8, InstructionMeta>;
-type InstructionMeta = SimpleMorphism<String, DeductiveLinearCost>;
+type Transition = Morphism<u8, TransitionMeta>;
+type TransitionMeta = SimpleMorphism<String, DeductiveLinearCost>;
 
-fn get_positions() -> Category<u8, InstructionMeta> {
-    let repay_loan = Instruction::new(
+fn transitions() -> Vec<Transition> {
+    let from1to0_cheap = Transition::new(
         1,
         0,
-        InstructionMeta {
-            meta: "repay".to_owned(),
+        TransitionMeta {
+            meta: "1to0_cheap".to_owned(),
             logic: DeductiveLinearCost {
                 rate: 1.into(),
                 constant: 1.into(),
             },
         },
     );
-    let swap1to2 = Instruction::new(
+    let from1to0 = Transition::new(
         1,
-        2,
-        InstructionMeta {
-            meta: "repay".to_owned(),
+        0,
+        TransitionMeta {
+            meta: "1to0".to_owned(),
             logic: DeductiveLinearCost {
                 rate: 10.into(),
                 constant: 10.into(),
             },
         },
     );
-    let swap2to1 = Instruction::new(
+    let from1to2 = Transition::new(
+        1,
+        2,
+        TransitionMeta {
+            meta: "1to2".to_owned(),
+            logic: DeductiveLinearCost {
+                rate: 10.into(),
+                constant: 10.into(),
+            },
+        },
+    );
+    let from2to1 = Transition::new(
         2,
         1,
-        InstructionMeta {
-            meta: "repay".to_owned(),
+        TransitionMeta {
+            meta: "2to1".to_owned(),
             logic: DeductiveLinearCost {
                 rate: 10.into(),
                 constant: 10.into(),
@@ -41,19 +52,58 @@ fn get_positions() -> Category<u8, InstructionMeta> {
         },
     );
 
-    vec![repay_loan, swap1to2, swap2to1].into()
+    vec![from1to0_cheap, from1to0, from1to2, from2to1]
 }
 
 #[test]
 fn dijkstra_pathfinding() {
-    let x = shortest_single_path_with_accumulating_sizes(&get_positions(), 2, 0, 100.into());
-
-    println!("{x:#?}");
+    let (path, cost) =
+        shortest_single_path_with_accumulating_sizes(&transitions().into(), 2, 0, 100.into())
+            .unwrap();
+    let expected = expected([100, 0, 0]);
+    assert_eq!(expected.len(), path.len());
+    for (expected_vertex, actual_vertex) in expected.into_iter().zip(path) {
+        assert_eq!(expected_vertex, actual_vertex);
+    }
+    assert_eq!(Float::from(1011), cost);
 }
 
 #[test]
 fn bellman_ford_petgraph() {
-    let path =
-        shortest_single_path_allowing_negative_cost(&get_positions(), 2, 0, 100.into()).unwrap();
-    println!("{path:#?}");
+    let (path, cost) =
+        shortest_single_path_allowing_negative_cost(&transitions().into(), 2, 0, 100.into())
+            .unwrap()
+            .unwrap();
+    let expected = expected([100, 100, 100]);
+    assert_eq!(expected.len(), path.len());
+    for (expected_vertex, actual_vertex) in expected.into_iter().zip(path) {
+        assert_eq!(expected_vertex, actual_vertex);
+    }
+    assert_eq!(Float::from(1111), cost);
+}
+
+fn expected(sizes: [i32; 3]) -> Vec<Vertex<u8, TransitionMeta>> {
+    let transitions = transitions();
+    vec![
+        Vertex::Object {
+            inner: 2.into(),
+            size: sizes[0].into(),
+        },
+        Vertex::Morphism {
+            inner: transitions[3].clone(),
+            input: sizes[0].into(),
+        },
+        Vertex::Object {
+            inner: 1.into(),
+            size: sizes[1].into(),
+        },
+        Vertex::Morphism {
+            inner: transitions[0].clone(),
+            input: sizes[1].into(),
+        },
+        Vertex::Object {
+            inner: 0.into(),
+            size: sizes[2].into(),
+        },
+    ]
 }

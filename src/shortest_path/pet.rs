@@ -42,15 +42,15 @@ pub fn shortest_single_path_with_bellman_ford<
         .ok_or(MissingObject(target.clone()))?;
     let paths = bellman_ford(&cg.graph, source_index).map_err(|_| NegativeCycle)?;
     let mut path = vec![];
-    let mut last = target_index;
-    while last != source_index {
-        path.push(last);
-        if let None = paths.predecessors[last.index()] {
+    let mut work_back = target_index;
+    while work_back != source_index {
+        path.push(work_back);
+        if let None = paths.predecessors[work_back.index()] {
             return Ok(None)
         }
-        last = paths.predecessors[last.index()].unwrap();
+        work_back = paths.predecessors[work_back.index()].unwrap();
     }
-    path.push(last);
+    path.push(work_back);
     path.reverse();
 
     Ok(Some((
@@ -61,7 +61,7 @@ pub fn shortest_single_path_with_bellman_ford<
             .into_iter()
             .map(|v| Vertex::from(v, category))
             .collect(),
-        paths.distances[last.index()], // todo i think this is wrong
+        paths.distances[target_index.index()],
     )))
 }
 
