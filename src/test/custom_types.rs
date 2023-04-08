@@ -1,7 +1,6 @@
 use std::{fmt::Debug, rc::Rc};
 
 use crate::category::Category;
-use crate::category::HasId;
 use crate::impls::{DeductiveLinearCost, Float};
 use crate::morphism::{ApplyMorphism, Morphism, MorphismOutput};
 use crate::shortest_path::*;
@@ -50,12 +49,6 @@ impl PositionId {
             position_token_mint,
             variant: 0,
         }
-    }
-}
-
-impl HasId<PositionId> for PositionId {
-    fn id(&self) -> PositionId {
-        *self
     }
 }
 

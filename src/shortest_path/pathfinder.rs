@@ -23,6 +23,9 @@ pub fn shortest_single_path_with_dijkstra<
     target: Id,
     input_size: Size,
 ) -> Option<(Vec<Vertex<Id, M, Object, Size>>, Cost)> {
+    if category.get_object(&source).is_none() {
+        return None
+    }
     let start_vertex = LeanVertex::Object {
         id: source,
         size: input_size,

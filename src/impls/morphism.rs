@@ -29,10 +29,10 @@ impl<Meta: MorphismMeta, Logic> Hash for SimpleMorphism<Meta, Logic> {
     }
 }
 
-impl SimpleMorphism {
-    pub fn new(name: String) -> Self {
+impl<Meta: MorphismMeta> SimpleMorphism<Meta> {
+    pub fn new(meta: Meta) -> Self {
         Self {
-            meta: name,
+            meta,
             logic: ConstantCost,
         }
     }
@@ -67,6 +67,7 @@ impl ApplyMorphism<Float, Float, true> for DeductiveLinearCost {
 }
 
 /// Every morphism is always a cost of 1, for a basic unweighted graph.
+#[derive(Clone, Debug)]
 pub struct ConstantCost;
 
 impl ApplyMorphism<(), Float, true> for ConstantCost {

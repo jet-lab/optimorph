@@ -7,7 +7,7 @@ use std::{
 use thiserror::Error;
 
 use crate::{
-    impls::{SimpleMorphism, SimpleObject},
+    impls::SimpleMorphism,
     morphism::{Morphism, MorphismMeta},
 };
 
@@ -16,11 +16,17 @@ pub trait HasId<Id: Key> {
     fn id(&self) -> Id;
 }
 
+impl<Id: Key> HasId<Id> for Id {
+    fn id(&self) -> Id {
+        self.clone()
+    }
+}
+
 pub trait Key: Eq + Hash + Debug + Clone {}
 impl<K: Eq + Hash + Debug + Clone> Key for K {}
 
 #[derive(Debug)]
-pub struct Category<Id = SimpleObject, M = SimpleMorphism, Object = Id>
+pub struct Category<Id = String, M = SimpleMorphism, Object = Id>
 where
     Id: Key,
     Object: HasId<Id>,
@@ -147,7 +153,7 @@ where
             missing.push(format!("target: {:?}", morphism.target));
         }
         if !missing.is_empty() {
-            return Err(MissingNodes(missing));
+            return Err(MissingObjects(missing));
         }
 
         Ok(())
@@ -198,7 +204,7 @@ where
 pub enum CategoryError {
     #[error("There is already a record with this item's key")]
     AlreadyInserted,
-    #[error("The nodes were expected but not found: {0:?}")]
-    MissingNodes(Vec<String>),
+    #[error("The objects were expected but not found: {0:?}")]
+    MissingObjects(Vec<String>),
 }
 use CategoryError::*;

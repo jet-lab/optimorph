@@ -28,6 +28,9 @@ pub fn shortest_single_path_with_bellman_ford<
     target: Id,
     input_size: Size, // used for all morphisms - accumulation is not supported
 ) -> Result<Option<(Vec<Vertex<Id, M, Object, Size>>, Cost)>, PathFindingError<Id>> {
+    if category.get_object(&source).is_none() {
+        return Ok(None)
+    }
     let cg = CategoryGraph::new(category, input_size);
     let source_index = *cg
         .object_id_to_index
@@ -42,6 +45,9 @@ pub fn shortest_single_path_with_bellman_ford<
     let mut last = target_index;
     while last != source_index {
         path.push(last);
+        if let None = paths.predecessors[last.index()] {
+            return Ok(None)
+        }
         last = paths.predecessors[last.index()].unwrap();
     }
     path.push(last);
