@@ -3,7 +3,8 @@ use std::fmt::Debug;
 use crate::category::{Category, HasId};
 use crate::impls::Float;
 use crate::morphism::{ApplyMorphism, Morphism, MorphismOutput};
-use crate::shortest_path::*;
+use crate::shortest_path::optimizer::Optimizer;
+use crate::{shortest_path::*, InfallibleResultExt};
 
 type MyMorph = Morphism<MyObjId, MyMorphMeta>;
 
@@ -112,28 +113,21 @@ fn get_category() -> Category<MyObjId, MyMorphMeta, MyObject> {
 /// increases the cost of step2_static
 #[test]
 fn dijkstra_pathfinding() {
-    let (_path, cost) = shortest_single_path_with_accumulating_sizes(
-        &get_category(),
-        MyObjId([0, 0]),
-        MyObjId([1, 1]),
-        10.into(),
-    )
-    .unwrap();
+    let path =
+        Accumulating::shortest_path(&get_category(), MyObjId([0, 0]), MyObjId([1, 1]), 10.into())
+            .safe_unwrap()
+            .unwrap();
 
-    assert_eq!(cost, 250.into());
+    assert_eq!(path.cost, 250.into());
 }
 
 /// prefers the step2_dynamic because sizes are not accumulated and 70 < 100.
 #[test]
 fn bellman_ford_petgraph() {
-    let (_path, cost) = shortest_single_path_allowing_negative_cost(
-        &get_category(),
-        MyObjId([0, 0]),
-        MyObjId([1, 1]),
-        10.into(),
-    )
-    .unwrap()
-    .unwrap();
+    let path =
+        Negatable::shortest_path(&get_category(), MyObjId([0, 0]), MyObjId([1, 1]), 10.into())
+            .unwrap()
+            .unwrap();
 
-    assert_eq!(cost, 220.into());
+    assert_eq!(path.cost, 220.into());
 }

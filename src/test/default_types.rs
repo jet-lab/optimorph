@@ -1,7 +1,8 @@
 use crate::impls::{DeductiveLinearCost, Float, SimpleMorphism};
 use crate::morphism::Morphism;
-use crate::shortest_path::*;
+use crate::shortest_path::optimizer::Optimizer;
 use crate::vertex::Vertex;
+use crate::{shortest_path::*, InfallibleResultExt};
 
 type MyMorph = Morphism<u8, MyMorphMeta>;
 type MyMorphMeta = SimpleMorphism<String, DeductiveLinearCost>;
@@ -57,29 +58,28 @@ fn transitions() -> Vec<MyMorph> {
 
 #[test]
 fn dijkstra_pathfinding() {
-    let (path, cost) =
-        shortest_single_path_with_accumulating_sizes(&transitions().into(), 2, 0, 100.into())
-            .unwrap();
+    let path = Accumulating::shortest_path(&transitions().into(), 2, 0, 100.into())
+        .safe_unwrap()
+        .unwrap();
     let expected = expected([100, 0, 0]);
-    assert_eq!(expected.len(), path.len());
-    for (expected_vertex, actual_vertex) in expected.into_iter().zip(path) {
+    assert_eq!(expected.len(), path.vertices.len());
+    for (expected_vertex, actual_vertex) in expected.into_iter().zip(path.vertices) {
         assert_eq!(expected_vertex, actual_vertex);
     }
-    assert_eq!(Float::from(1011), cost);
+    assert_eq!(Float::from(1011), path.cost);
 }
 
 #[test]
 fn bellman_ford_petgraph() {
-    let (path, cost) =
-        shortest_single_path_allowing_negative_cost(&transitions().into(), 2, 0, 100.into())
-            .unwrap()
-            .unwrap();
+    let path = Negatable::shortest_path(&transitions().into(), 2, 0, 100.into())
+        .unwrap()
+        .unwrap();
     let expected = expected([100, 100, 100]);
-    assert_eq!(expected.len(), path.len());
-    for (expected_vertex, actual_vertex) in expected.into_iter().zip(path) {
+    assert_eq!(expected.len(), path.vertices.len());
+    for (expected_vertex, actual_vertex) in expected.into_iter().zip(path.vertices) {
         assert_eq!(expected_vertex, actual_vertex);
     }
-    assert_eq!(Float::from(1111), cost);
+    assert_eq!(Float::from(1111), path.cost);
 }
 
 fn expected(sizes: [i32; 3]) -> Vec<Vertex<u8, MyMorphMeta>> {

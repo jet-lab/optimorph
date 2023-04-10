@@ -11,6 +11,8 @@ use pathfinding::prelude::dijkstra;
 
 use crate::category::Category;
 
+use super::path::Path;
+
 pub fn shortest_single_path_with_dijkstra<
     Id: Key,
     Object: HasId<Id>,
@@ -22,9 +24,9 @@ pub fn shortest_single_path_with_dijkstra<
     source: Id,
     target: Id,
     input_size: Size,
-) -> Option<(Vec<Vertex<Id, M, Object, Size>>, Cost)> {
+) -> Option<Path<Id, M, Object, Size, Cost>> {
     if category.get_object(&source).is_none() {
-        return None
+        return None;
     }
     let start_vertex = LeanVertex::Object {
         id: source,
@@ -40,9 +42,11 @@ pub fn shortest_single_path_with_dijkstra<
             items
                 .into_iter()
                 .map(|v| Vertex::from(v, category))
-                .collect(),
+                .collect::<Vec<_>>(),
             cost,
         )
+            .try_into()
+            .expect("`LeanVertex::successors` is trusted to produce valid paths.")
     })
 }
 
