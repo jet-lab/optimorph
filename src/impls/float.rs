@@ -4,10 +4,13 @@ use ordered_float::OrderedFloat;
 use pathfinding::num_traits::Zero;
 use petgraph::algo::FloatMeasure;
 
+const ZERO: Float = Float(OrderedFloat(0.0));
+
 /// Basic floating point number that implements all the traits necessary to be
 /// used as a Size or a Cost
 #[derive(Clone, Copy, Default, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Float(OrderedFloat<f64>);
+
 impl Add for Float {
     type Output = Self;
 
@@ -15,6 +18,7 @@ impl Add for Float {
         Self(self.0.add(rhs.0))
     }
 }
+
 impl Sub for Float {
     type Output = Self;
 
@@ -22,6 +26,7 @@ impl Sub for Float {
         Self(self.0.sub(rhs.0))
     }
 }
+
 impl Mul for Float {
     type Output = Float;
 
@@ -29,12 +34,13 @@ impl Mul for Float {
         Self(self.0.mul(rhs.0))
     }
 }
+
 impl<T: Into<f64>> From<T> for Float {
     fn from(value: T) -> Self {
         Self(OrderedFloat(value.into()))
     }
 }
-const ZERO: Float = Float(OrderedFloat(0.0));
+
 impl Zero for Float {
     fn zero() -> Self {
         ZERO
@@ -43,6 +49,7 @@ impl Zero for Float {
         self == &ZERO
     }
 }
+
 impl FloatMeasure for Float {
     fn zero() -> Self {
         ZERO

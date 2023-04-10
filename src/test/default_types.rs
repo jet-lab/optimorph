@@ -3,14 +3,14 @@ use crate::morphism::Morphism;
 use crate::shortest_path::*;
 use crate::vertex::Vertex;
 
-type Transition = Morphism<u8, TransitionMeta>;
-type TransitionMeta = SimpleMorphism<String, DeductiveLinearCost>;
+type MyMorph = Morphism<u8, MyMorphMeta>;
+type MyMorphMeta = SimpleMorphism<String, DeductiveLinearCost>;
 
-fn transitions() -> Vec<Transition> {
-    let from1to0_cheap = Transition::new(
+fn transitions() -> Vec<MyMorph> {
+    let from1to0_cheap = MyMorph::new(
         1,
         0,
-        TransitionMeta {
+        MyMorphMeta {
             meta: "1to0_cheap".to_owned(),
             logic: DeductiveLinearCost {
                 rate: 1.into(),
@@ -18,10 +18,10 @@ fn transitions() -> Vec<Transition> {
             },
         },
     );
-    let from1to0 = Transition::new(
+    let from1to0 = MyMorph::new(
         1,
         0,
-        TransitionMeta {
+        MyMorphMeta {
             meta: "1to0".to_owned(),
             logic: DeductiveLinearCost {
                 rate: 10.into(),
@@ -29,10 +29,10 @@ fn transitions() -> Vec<Transition> {
             },
         },
     );
-    let from1to2 = Transition::new(
+    let from1to2 = MyMorph::new(
         1,
         2,
-        TransitionMeta {
+        MyMorphMeta {
             meta: "1to2".to_owned(),
             logic: DeductiveLinearCost {
                 rate: 10.into(),
@@ -40,10 +40,10 @@ fn transitions() -> Vec<Transition> {
             },
         },
     );
-    let from2to1 = Transition::new(
+    let from2to1 = MyMorph::new(
         2,
         1,
-        TransitionMeta {
+        MyMorphMeta {
             meta: "2to1".to_owned(),
             logic: DeductiveLinearCost {
                 rate: 10.into(),
@@ -82,7 +82,7 @@ fn bellman_ford_petgraph() {
     assert_eq!(Float::from(1111), cost);
 }
 
-fn expected(sizes: [i32; 3]) -> Vec<Vertex<u8, TransitionMeta>> {
+fn expected(sizes: [i32; 3]) -> Vec<Vertex<u8, MyMorphMeta>> {
     let transitions = transitions();
     vec![
         Vertex::Object {

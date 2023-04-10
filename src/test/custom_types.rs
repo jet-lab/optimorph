@@ -1,133 +1,139 @@
-use std::{fmt::Debug, rc::Rc};
+use std::fmt::Debug;
 
-use crate::category::Category;
-use crate::impls::{DeductiveLinearCost, Float};
+use crate::category::{Category, HasId};
+use crate::impls::Float;
 use crate::morphism::{ApplyMorphism, Morphism, MorphismOutput};
 use crate::shortest_path::*;
 
-type Instruction = Morphism<PositionId, InstructionMeta>;
+type MyMorph = Morphism<MyObjId, MyMorphMeta>;
 
-#[derive(Clone)]
-struct InstructionMeta {
-    name: String,
-    logic: Rc<dyn ApplyMorphism<Float, Float, true>>,
-}
-
-impl Debug for InstructionMeta {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("InstructionMeta")
-            .field("name", &self.name)
-            .finish()
-    }
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+enum MyMorphMeta {
+    Static(Float),
+    Dynamic(Float, Float),
 }
 
-impl PartialEq for InstructionMeta {
-    fn eq(&self, other: &Self) -> bool {
-        self.name == other.name
-    }
-}
-impl Eq for InstructionMeta {}
-impl std::hash::Hash for InstructionMeta {
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        self.name.hash(state);
-    }
-}
-impl ApplyMorphism<Float, Float, true> for InstructionMeta {
+impl ApplyMorphism<Float, Float, true> for MyMorphMeta {
     fn apply(&self, input: Float) -> MorphismOutput {
-        self.logic.apply(input)
-    }
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Default)]
-pub struct PositionId {
-    position_token_mint: u64,
-    variant: u8,
-}
-impl PositionId {
-    pub fn new(position_token_mint: u64) -> Self {
-        PositionId {
-            position_token_mint,
-            variant: 0,
+        match self.clone() {
+            MyMorphMeta::Static(cost) => MorphismOutput { size: input, cost },
+            MyMorphMeta::Dynamic(a, b) => MorphismOutput {
+                cost: input * a,
+                size: input * b,
+            },
         }
     }
 }
 
-// enum PositionVariant {
-//     Only,
-//     FixedTermClaim(FixedTermClaim),
-// }
-
-// #[derive(Clone, Debug, PartialEq, Eq, Hash)]
-// enum FixedTermClaim {
-//     BorrowOrder,
-//     Loan,
-//     PastDueLoan,
-// }
-
-// pub struct LiquidationCost {
-//     change_in_effective_collateral: Float,
-//     change_in_required_collateral: Float,
-//     lost_equity: Float,
-// }
-
-fn get_positions() -> Category<PositionId, InstructionMeta> {
-    let repay_loan = Instruction::new(
-        PositionId::new(1),
-        PositionId::new(0),
-        InstructionMeta {
-            name: "repay".to_owned(),
-            logic: Rc::new(DeductiveLinearCost {
-                rate: 1.into(),
-                constant: 1.into(),
-            }),
-        },
-    );
-    let swap1to2 = Instruction::new(
-        PositionId::new(1),
-        PositionId::new(2),
-        InstructionMeta {
-            name: "repay".to_owned(),
-            logic: Rc::new(DeductiveLinearCost {
-                rate: 10.into(),
-                constant: 10.into(),
-            }),
-        },
-    );
-    let swap2to1 = Instruction::new(
-        PositionId::new(2),
-        PositionId::new(1),
-        InstructionMeta {
-            name: "repay".to_owned(),
-            logic: Rc::new(DeductiveLinearCost {
-                rate: 10.into(),
-                constant: 10.into(),
-            }),
-        },
-    );
-
-    vec![repay_loan, swap1to2, swap2to1].into()
+#[derive(Debug)]
+pub struct MyObject {
+    id: MyObjId,
+    _data: &'static str,
+}
+impl HasId<MyObjId> for MyObject {
+    fn id(&self) -> MyObjId {
+        self.id
+    }
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Default)]
+pub struct MyObjId([u8; 2]);
+
+fn get_category() -> Category<MyObjId, MyMorphMeta, MyObject> {
+    let mut category = Category::new();
+
+    category
+        .add_objects(vec![
+            MyObject {
+                id: MyObjId([0, 0]),
+                _data: "whatever",
+            },
+            MyObject {
+                id: MyObjId([0, 1]),
+                _data: "whatever",
+            },
+            MyObject {
+                id: MyObjId([1, 0]),
+                _data: "whatever",
+            },
+            MyObject {
+                id: MyObjId([1, 1]),
+                _data: "whatever",
+            },
+        ])
+        .unwrap();
+
+    let step0 = MyMorph::new(
+        MyObjId([0, 0]),
+        MyObjId([0, 1]),
+        MyMorphMeta::Static(100.into()),
+    );
+    let step0_reversed = MyMorph::new(
+        MyObjId([0, 1]),
+        MyObjId([0, 0]),
+        MyMorphMeta::Static(13.into()),
+    );
+    let step1_static = MyMorph::new(
+        MyObjId([0, 1]),
+        MyObjId([1, 0]),
+        MyMorphMeta::Static(100.into()),
+    );
+    let step1_dynamic = MyMorph::new(
+        MyObjId([0, 1]),
+        MyObjId([1, 0]),
+        MyMorphMeta::Dynamic(5.into(), 11.into()),
+    );
+    let step2_static = MyMorph::new(
+        MyObjId([1, 0]),
+        MyObjId([1, 1]),
+        MyMorphMeta::Static(100.into()),
+    );
+    let step2_dynamic = MyMorph::new(
+        MyObjId([1, 0]),
+        MyObjId([1, 1]),
+        MyMorphMeta::Dynamic(7.into(), 11.into()),
+    );
+
+    category
+        .add_morphisms(vec![
+            step0,
+            step0_reversed,
+            step1_static,
+            step1_dynamic,
+            step2_static,
+            step2_dynamic,
+        ])
+        .unwrap();
+
+    category
+}
+
+/// prefers the step2_static because step1_dynamic increased the size which
+/// increases the cost of step2_static
 #[test]
 fn dijkstra_pathfinding() {
-    let x = shortest_single_path_with_accumulating_sizes(
-        &get_positions(),
-        PositionId::new(2),
-        PositionId::new(0),
-        100.into(),
-    );
-
-    println!("{x:#?}");
-}
-
-#[test]
-fn bellman_ford_petgraph() {
-    let path = shortest_single_path_allowing_negative_cost(
-        &get_positions(),
-        PositionId::new(2),
-        PositionId::new(0),
-        100.into(),
+    let (_path, cost) = shortest_single_path_with_accumulating_sizes(
+        &get_category(),
+        MyObjId([0, 0]),
+        MyObjId([1, 1]),
+        10.into(),
     )
     .unwrap();
-    println!("{path:#?}");
+
+    assert_eq!(cost, 250.into());
+}
+
+/// prefers the step2_dynamic because sizes are not accumulated and 70 < 100.
+#[test]
+fn bellman_ford_petgraph() {
+    let (_path, cost) = shortest_single_path_allowing_negative_cost(
+        &get_category(),
+        MyObjId([0, 0]),
+        MyObjId([1, 1]),
+        10.into(),
+    )
+    .unwrap()
+    .unwrap();
+
+    assert_eq!(cost, 220.into());
 }
