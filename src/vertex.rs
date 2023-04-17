@@ -16,7 +16,7 @@ use crate::{
 };
 
 /// Comprehensive return type that includes the full object
-#[derive(Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum Vertex<Id, M, Object = Id, Size = Float>
 where
     Object: HasId<Id>,
@@ -65,7 +65,7 @@ where
     Size: Clone,
 {
     fn default() -> Self {
-        panic!("do not use this. it makes no sense. this is only implemented to satisfy annoying trait bounds that are not actually used");
+        unimplemented!("do not use this. it makes no sense. this is only implemented to satisfy annoying trait bounds that are not actually used");
     }
 }
 

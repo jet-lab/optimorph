@@ -1,15 +1,21 @@
-use std::ops::{Add, Mul, Sub};
+use std::ops::{Add, Div, Mul, Neg, Sub};
 
 use ordered_float::OrderedFloat;
 use pathfinding::num_traits::Zero;
 use petgraph::algo::FloatMeasure;
 
-const ZERO: Float = Float(OrderedFloat(0.0));
+pub const ZERO: Float = Float(OrderedFloat(0.0));
 
 /// Basic floating point number that implements all the traits necessary to be
 /// used as a Size or a Cost
 #[derive(Clone, Copy, Default, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Float(OrderedFloat<f64>);
+
+impl Float {
+    pub fn to_f64(self) -> f64 {
+        self.0 .0
+    }
+}
 
 impl Add for Float {
     type Output = Self;
@@ -27,11 +33,27 @@ impl Sub for Float {
     }
 }
 
+impl Neg for Float {
+    type Output = Self;
+
+    fn neg(self) -> Self::Output {
+        Self(-self.0)
+    }
+}
+
 impl Mul for Float {
     type Output = Float;
 
     fn mul(self, rhs: Self) -> Self::Output {
         Self(self.0.mul(rhs.0))
+    }
+}
+
+impl Div for Float {
+    type Output = Float;
+
+    fn div(self, rhs: Self) -> Self::Output {
+        Self(self.0.div(rhs.0))
     }
 }
 

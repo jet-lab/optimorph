@@ -1,4 +1,5 @@
 pub mod category;
+pub mod collections;
 pub mod impls;
 pub mod morphism;
 pub mod shortest_path;

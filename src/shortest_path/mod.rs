@@ -16,13 +16,13 @@ use self::{
     my_pathfinding::{PathfindingCost, PathfindingSize},
     my_petgraph::PathFindingError,
     optimizer::Optimizer,
-    path::Path,
+    path::WellFormedPath,
 };
 
 /// Shortest path optimizer that uses pathfinding::dijkstra.
-/// 
+///
 /// Cost is not allowed to be negative.
-/// 
+///
 /// Accumulates Size information. This uses a morphism's output as the size of
 /// the next object, which is the input for all of the next object's outbound
 /// morphisms.
@@ -41,7 +41,7 @@ where
         source: Id,
         target: Id,
         input_size: Size,
-    ) -> Result<Option<Path<Id, M, O, Size, Cost>>, Infallible>
+    ) -> Result<Option<WellFormedPath<Id, M, O, Size, Cost>>, Infallible>
     where
         Id: Key,
         O: HasId<Id>,
@@ -53,13 +53,13 @@ where
 }
 
 /// Shortest path optimizer that uses petgraph::bellman_ford.
-/// 
+///
 /// Cost is allowed to be negative.
-/// 
+///
 /// Every morphism uses the user-provided "input_size" as its input. There is no
 /// accumulation of sizes through a path. No object size or morphism input can
 /// be based on the shape of the graph that came before it.
-/// 
+///
 /// TODO: There is a much faster approach to shortest_paths that uses the fact
 /// that the petgraph output for bellmon_ford already calculates the distance
 /// from the input source to every possible target.
@@ -78,7 +78,7 @@ where
         source: Id,
         target: Id,
         input_size: Size,
-    ) -> Result<Option<Path<Id, M, O, Size, Cost>>, PathFindingError<Id>>
+    ) -> Result<Option<WellFormedPath<Id, M, O, Size, Cost>>, PathFindingError<Id>>
     where
         Id: Key,
         O: HasId<Id>,
@@ -86,4 +86,3 @@ where
         my_petgraph::shortest_single_path_with_bellman_ford(category, source, target, input_size)
     }
 }
-

@@ -129,7 +129,7 @@ where
     pub fn add_object(&mut self, object: Object) -> Result<(), CategoryError> {
         let id = object.id();
         match self.objects.entry(id.clone()) {
-            Entry::Occupied(_) => return Err(AlreadyInserted),
+            Entry::Occupied(_) => return Err(ObjectAlreadyInserted(format!("{:?}", object.id()))),
             Entry::Vacant(x) => {
                 x.insert(Rc::new(object));
             }
@@ -143,7 +143,10 @@ where
 
     pub fn verify_morphism(&self, morphism: &Morphism<Id, M>) -> Result<(), CategoryError> {
         if self.morphisms.contains(morphism) {
-            return Err(AlreadyInserted);
+            return Err(MorphismAlreadyInserted(
+                format!("{:?}", morphism.source),
+                format!("{:?}", morphism.source),
+            ));
         }
         let mut missing = vec![];
         if self.objects.get(&morphism.source).is_none() {
@@ -200,10 +203,13 @@ where
     }
 }
 
+/// todo smarter about debug and string and types etc
 #[derive(Error, Debug)]
 pub enum CategoryError {
-    #[error("There is already a record with this item's key")]
-    AlreadyInserted,
+    #[error("There is already an object with this key: {0:?}")]
+    ObjectAlreadyInserted(String),
+    #[error("This morphism was already inserted. start: {0:?}, end: {1:?}, metadata: cannot be displayed")]
+    MorphismAlreadyInserted(String, String),
     #[error("The objects were expected but not found: {0:?}")]
     MissingObjects(Vec<String>),
 }

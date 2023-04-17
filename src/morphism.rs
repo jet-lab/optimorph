@@ -40,16 +40,33 @@ where
     }
 }
 
+impl<Id, M, IntoId1, IntoId2, IntoM> From<(IntoId1, IntoId2, IntoM)> for Morphism<Id, M>
+where
+    Id: Key,
+    M: MorphismMeta,
+    IntoId1: Into<Id>,
+    IntoId2: Into<Id>,
+    IntoM: Into<M>,
+{
+    fn from((source, target, metadata): (IntoId1, IntoId2, IntoM)) -> Self {
+        Self {
+            source: source.into(),
+            target: target.into(),
+            metadata: Rc::new(metadata.into()),
+        }
+    }
+}
+
 impl<Id, M> Morphism<Id, M>
 where
     Id: Key,
     M: MorphismMeta,
 {
-    pub fn new(source: Id, target: Id, metadata: M) -> Self {
+    pub fn new(source: Id, target: Id, metadata: impl Into<M>) -> Self {
         Self {
             source,
             target,
-            metadata: Rc::new(metadata),
+            metadata: Rc::new(metadata.into()),
         }
     }
 

@@ -63,8 +63,8 @@ fn dijkstra_pathfinding() {
         .unwrap();
     let expected = expected([100, 0, 0]);
     assert_eq!(expected.len(), path.vertices.len());
-    for (expected_vertex, actual_vertex) in expected.into_iter().zip(path.vertices) {
-        assert_eq!(expected_vertex, actual_vertex);
+    for (expected_vertex, actual_vertex) in expected.into_iter().zip(path.vertices.iter()) {
+        assert_eq!(&expected_vertex, actual_vertex);
     }
     assert_eq!(Float::from(1011), path.cost);
 }
@@ -76,8 +76,8 @@ fn bellman_ford_petgraph() {
         .unwrap();
     let expected = expected([100, 100, 100]);
     assert_eq!(expected.len(), path.vertices.len());
-    for (expected_vertex, actual_vertex) in expected.into_iter().zip(path.vertices) {
-        assert_eq!(expected_vertex, actual_vertex);
+    for (expected_vertex, actual_vertex) in expected.into_iter().zip(path.vertices.iter()) {
+        assert_eq!(&expected_vertex, actual_vertex);
     }
     assert_eq!(Float::from(1111), path.cost);
 }

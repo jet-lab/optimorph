@@ -11,7 +11,7 @@ use pathfinding::prelude::dijkstra;
 
 use crate::category::Category;
 
-use super::path::Path;
+use super::path::{Path, WellFormedPath};
 
 pub fn shortest_single_path_with_dijkstra<
     Id: Key,
@@ -24,8 +24,8 @@ pub fn shortest_single_path_with_dijkstra<
     source: Id,
     target: Id,
     input_size: Size,
-) -> Option<Path<Id, M, Object, Size, Cost>> {
-    if category.get_object(&source).is_none() {
+) -> Option<WellFormedPath<Id, M, Object, Size, Cost>> {
+    if source == target || category.get_object(&source).is_none() {
         return None;
     }
     let start_vertex = LeanVertex::Object {
@@ -38,15 +38,15 @@ pub fn shortest_single_path_with_dijkstra<
         move |n| n.is_object_with_id(&target),
     )
     .map(|(items, cost)| {
-        (
-            items
+        WellFormedPath(Path {
+            vertices: items
                 .into_iter()
                 .map(|v| Vertex::from(v, category))
-                .collect::<Vec<_>>(),
+                .collect::<Vec<_>>()
+                .try_into()
+                .expect("would be none, not empty"),
             cost,
-        )
-            .try_into()
-            .expect("`LeanVertex::successors` is trusted to produce valid paths.")
+        })
     })
 }
 

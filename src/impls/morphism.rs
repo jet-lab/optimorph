@@ -6,7 +6,7 @@ use crate::morphism::{ApplyMorphism, MorphismMeta, MorphismOutput};
 use super::Float;
 
 /// This can be used as the metadata field in Morphism.
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct SimpleMorphism<Meta = String, Logic = ConstantCost>
 where
     Meta: MorphismMeta,

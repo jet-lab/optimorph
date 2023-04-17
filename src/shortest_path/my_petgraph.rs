@@ -27,8 +27,8 @@ pub fn shortest_single_path_with_bellman_ford<
     source: Id,
     target: Id,
     input_size: Size, // used for all morphisms - accumulation is not supported
-) -> Result<Option<Path<Id, M, Object, Size, Cost>>, PathFindingError<Id>> {
-    if category.get_object(&source).is_none() {
+) -> Result<Option<WellFormedPath<Id, M, Object, Size, Cost>>, PathFindingError<Id>> {
+    if source == target || category.get_object(&source).is_none() {
         return Ok(None);
     }
     let cg = CategoryGraph::new(category, input_size);
@@ -53,20 +53,19 @@ pub fn shortest_single_path_with_bellman_ford<
     path.push(work_back);
     path.reverse();
 
-    Ok(Some(
-        (
-            path.into_iter()
-                .map(|idx| cg.index_to_vertex.get(&idx).cloned())
-                .collect::<Option<Vec<_>>>()
-                .unwrap() // todo
-                .into_iter()
-                .map(|v| Vertex::from(v, category))
-                .collect(),
-            paths.distances[target_index.index()],
-        )
+    Ok(Some(WellFormedPath(Path {
+        vertices: path
+            .into_iter()
+            .map(|idx| cg.index_to_vertex.get(&idx).cloned())
+            .collect::<Option<Vec<_>>>()
+            .unwrap() // todo
+            .into_iter()
+            .map(|v| Vertex::from(v, category))
+            .collect::<Vec<_>>()
             .try_into()
-            .expect("`CategoryGraph::new` is trusted to produce a graph with only valid paths."),
-    ))
+            .expect("returns none"),
+        cost: paths.distances[target_index.index()],
+    })))
 }
 
 #[derive(Error, Debug)]
@@ -78,7 +77,7 @@ pub enum PathFindingError<Id: std::fmt::Debug> {
 }
 use PathFindingError::*;
 
-use super::path::Path;
+use super::path::{Path, WellFormedPath};
 
 struct CategoryGraph<Id, M, Size, Cost, const NON_NEGATIVE: bool>
 where

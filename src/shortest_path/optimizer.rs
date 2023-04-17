@@ -2,37 +2,39 @@ use std::ops::Div;
 
 use crate::{
     category::{Category, HasId, Key},
+    collections::Replace,
     morphism::MorphismMeta,
 };
 
-use super::path::Path;
+use super::path::WellFormedPath;
 
 pub trait Optimizer<M, Size, Cost, const NON_NEGATIVE: bool = false>
 where
     M: MorphismMeta,
+    Size: Clone,
 {
-    type Error<Id: Key, O>;
+    type Error<Id: Key, Obj>;
 
     /// Returns the cheapest path from source to target
-    fn shortest_path<Id, O>(
-        category: &Category<Id, M, O>,
+    fn shortest_path<Id, Obj>(
+        category: &Category<Id, M, Obj>,
         source: Id,
         target: Id,
         input_size: Size,
-    ) -> Result<Option<Path<Id, M, O, Size, Cost>>, Self::Error<Id, O>>
+    ) -> Result<Option<WellFormedPath<Id, M, Obj, Size, Cost>>, Self::Error<Id, Obj>>
     where
         Id: Key,
-        O: HasId<Id>;
+        Obj: HasId<Id>;
 
     /// Returns the cheapest path from each source to each target
-    fn shortest_paths<Id, O>(
-        category: &Category<Id, M, O>,
+    fn shortest_paths<Id, Obj>(
+        category: &Category<Id, M, Obj>,
         sources: Vec<(Id, Size)>,
         target: Vec<Id>,
-    ) -> Result<Vec<Path<Id, M, O, Size, Cost>>, Self::Error<Id, O>>
+    ) -> Result<Vec<WellFormedPath<Id, M, Obj, Size, Cost>>, Self::Error<Id, Obj>>
     where
         Id: Key,
-        O: HasId<Id>,
+        Obj: HasId<Id>,
     {
         sources
             .into_iter()
@@ -49,30 +51,35 @@ where
     /// Returns the cheapest path from each source to each target, sorted by
     /// Score.
     ///
-    /// Score is a Cost. This allows you to use the original cost, or to
-    /// transform the cost into a different type for comparison between paths.
-    fn ranked_paths<Id, O, Score>(
-        category: &Category<Id, M, O>,
+    /// The calculated Score replaces the Cost in the path. Likewise you can
+    /// provide a score calculator that returns whatever you want:
+    /// - the original Cost value.
+    /// - a transformation of the original Cost value with the same type.
+    /// - a value with any type, as long as it implements the required trait
+    ///   bounds for a cost.
+    fn ranked_paths<Id, Obj, Score, PathRet, Calculator>(
+        category: &Category<Id, M, Obj>,
         sources: Vec<(Id, Size)>,
-        target: Vec<Id>,
-        calculate_score: fn(&Path<Id, M, O, Size, Cost>) -> Score,
-    ) -> Result<Vec<Path<Id, M, O, Size, Score>>, Self::Error<Id, O>>
+        targets: Vec<Id>,
+        calculate_score: Calculator,
+    ) -> Result<Vec<PathRet::With<Score>>, Self::Error<Id, Obj>>
     where
         Id: Key,
-        O: HasId<Id>,
+        Obj: HasId<Id>,
         Score: Ord + Clone,
+        PathRet: From<WellFormedPath<Id, M, Obj, Size, Cost>> + Replace<Cost>,
+        Calculator: Fn(&PathRet) -> Score
     {
-        let mut paths = Self::shortest_paths(category, sources, target)?
+        let mut paths = Self::shortest_paths(category, sources, targets)?
             .into_iter()
-            .map(|path| Path {
-                cost: calculate_score(&path),
-                vertices: path.vertices,
-                source: path.source,
-                target: path.target,
+            .map(PathRet::from)
+            .map(|path| {
+                let score = calculate_score(&path);
+                path.replace(score).0
             })
-            .collect::<Vec<_>>();
+            .collect::<Vec<PathRet::With<Score>>>();
 
-        paths.sort_by_key(|p| p.cost.clone());
+        paths.sort_by_key(|p| p.read().clone());
 
         Ok(paths)
     }
@@ -80,28 +87,36 @@ where
 
 /// Common score calculations for MorphismOptimizer::ranked_paths
 pub mod score {
+    use crate::vertex::Vertex;
+
     use super::*;
 
     /// This just passes along the original cost as the score
-    pub fn cost<Id, M, O, Size, Cost>(path: Path<Id, M, O, Size, Cost>) -> Cost
+    pub fn cost<Id, M, O, Size, Cost>(path: &WellFormedPath<Id, M, O, Size, Cost>) -> Cost
     where
         Id: Key,
         O: HasId<Id>,
         M: MorphismMeta,
+        Size: Clone,
+        Cost: Clone,
     {
-        path.cost
+        path.0.cost.clone()
     }
 
     /// This calculates the ratio of cost divided by input size. It works if
     /// Size, Cost, and Score are all the same numeric type. More generally,
     /// this works if Cost implements Div<Size, Output = Score>
-    pub fn cost_per_input<Id, M, O, Size, Cost, Score>(path: Path<Id, M, O, Size, Cost>) -> Score
+    pub fn cost_per_input<Id, M, O, Size, Cost, Score>(
+        path: &WellFormedPath<Id, M, O, Size, Cost>,
+    ) -> Score
     where
         Id: Key,
         O: HasId<Id>,
         M: MorphismMeta,
-        Cost: Div<Size, Output = Score>,
+        Cost: Div<Size, Output = Score> + Clone,
+        Size: Clone,
     {
-        path.cost / path.source.1
+        let Vertex::Morphism { input, .. } = &path.0.vertices.get(1).unwrap() else { unreachable!() };
+        path.0.cost.clone() / input.clone()
     }
 }
