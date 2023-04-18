@@ -1,7 +1,7 @@
 use std::ops::Div;
 
 use crate::{
-    category::{Category, HasId, Key},
+    category::{Category, Key, Object},
     collections::Replace,
     morphism::MorphismMeta,
 };
@@ -24,7 +24,7 @@ where
     ) -> Result<Option<WellFormedPath<Id, M, Obj, Size, Cost>>, Self::Error<Id, Obj>>
     where
         Id: Key,
-        Obj: HasId<Id>;
+        Obj: Object<Id>;
 
     /// Returns the cheapest path from each source to each target
     fn shortest_paths<Id, Obj>(
@@ -34,7 +34,7 @@ where
     ) -> Result<Vec<WellFormedPath<Id, M, Obj, Size, Cost>>, Self::Error<Id, Obj>>
     where
         Id: Key,
-        Obj: HasId<Id>,
+        Obj: Object<Id>,
     {
         sources
             .into_iter()
@@ -65,7 +65,7 @@ where
     ) -> Result<Vec<PathRet::With<Score>>, Self::Error<Id, Obj>>
     where
         Id: Key,
-        Obj: HasId<Id>,
+        Obj: Object<Id>,
         Score: Ord + Clone,
         PathRet: From<WellFormedPath<Id, M, Obj, Size, Cost>> + Replace<Cost>,
         Calculator: Fn(&PathRet) -> Score
@@ -92,10 +92,10 @@ pub mod score {
     use super::*;
 
     /// This just passes along the original cost as the score
-    pub fn cost<Id, M, O, Size, Cost>(path: &WellFormedPath<Id, M, O, Size, Cost>) -> Cost
+    pub fn cost<Id, M, Obj, Size, Cost>(path: &WellFormedPath<Id, M, Obj, Size, Cost>) -> Cost
     where
         Id: Key,
-        O: HasId<Id>,
+        Obj: Object<Id>,
         M: MorphismMeta,
         Size: Clone,
         Cost: Clone,
@@ -106,12 +106,12 @@ pub mod score {
     /// This calculates the ratio of cost divided by input size. It works if
     /// Size, Cost, and Score are all the same numeric type. More generally,
     /// this works if Cost implements Div<Size, Output = Score>
-    pub fn cost_per_input<Id, M, O, Size, Cost, Score>(
-        path: &WellFormedPath<Id, M, O, Size, Cost>,
+    pub fn cost_per_input<Id, M, Obj, Size, Cost, Score>(
+        path: &WellFormedPath<Id, M, Obj, Size, Cost>,
     ) -> Score
     where
         Id: Key,
-        O: HasId<Id>,
+        Obj: Object<Id>,
         M: MorphismMeta,
         Cost: Div<Size, Output = Score> + Clone,
         Size: Clone,

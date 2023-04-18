@@ -1,4 +1,4 @@
-use std::ops::{Add, Div, Mul, Neg, Sub};
+use std::ops::{Add, AddAssign, Div, Mul, Neg, Sub, SubAssign};
 
 use ordered_float::OrderedFloat;
 use pathfinding::num_traits::Zero;
@@ -15,6 +15,14 @@ impl Float {
     pub fn to_f64(self) -> f64 {
         self.0 .0
     }
+    
+    pub fn abs(self) -> Float {
+        if self < ZERO {
+            -self
+        } else {
+            self
+        }
+    }
 }
 
 impl Add for Float {
@@ -25,11 +33,23 @@ impl Add for Float {
     }
 }
 
+impl AddAssign for Float {
+    fn add_assign(&mut self, rhs: Self) {
+        *self = *self + rhs
+    }
+}
+
 impl Sub for Float {
     type Output = Self;
 
     fn sub(self, rhs: Self) -> Self::Output {
         Self(self.0.sub(rhs.0))
+    }
+}
+
+impl SubAssign for Float {
+    fn sub_assign(&mut self, rhs: Self) {
+        *self = *self - rhs
     }
 }
 

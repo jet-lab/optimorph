@@ -1,12 +1,12 @@
-use std::{ops::Deref, rc::Rc};
+use std::{ops::Deref};
 
 use thiserror::Error;
 
 use crate::{
-    category::{HasId, Key},
+    category::{Key, Object},
     collections::{Replace, SomeVec},
     impls::Float,
-    morphism::{Morphism, MorphismMeta},
+    morphism::{ApplyMorphism, Morphism, MorphismMeta, MorphismOutput},
     vertex::Vertex,
 };
 
@@ -14,9 +14,7 @@ use crate::{
 // Path types
 //
 
-// See the `structs` macro definition to see the generics that are applied to
-// all of these types.
-structs!(
+structs!(// <Id, M, Obj = Id, Size = Float, Cost = Float>
     /// The basic type produced by the path optimization algorithms.
     Path {
         pub vertices: SomeVec<Vertex<Id, M, Obj, Size>>,
@@ -40,7 +38,7 @@ structs!(
     /// Alternate representation of a WellFormedPath with more structure:
     /// Organized as a list of each morphism from the path combined with its two
     /// adjacent objects.
-    CompositeMorphism {
+    AppliedCompositeMorphism {
         pub morphisms: SomeVec<AppliedMorphism<Id, M, Obj, Size>>,
         pub cost: Cost,
     }
@@ -52,12 +50,65 @@ structs!(
 pub struct AppliedMorphism<Id, M, Obj = Id, Size = Float>
 where
     Id: Key,
-    Obj: HasId<Id>,
+    Obj: Object<Id>,
     M: MorphismMeta,
 {
     pub morphism: Morphism<Id, M>,
-    pub source: (Rc<Obj>, Size),
-    pub target: (Rc<Obj>, Size),
+    pub source: (Obj, Size),
+    pub target: (Obj, Size),
+}
+
+impl<Id, M, Obj, Size, Cost> AppliedCompositeMorphism<Id, M, Obj, Size, Cost>
+where
+    Id: Key,
+    Obj: Object<Id>,
+    M: MorphismMeta,
+    Size: Clone,
+{
+    pub fn reapply<const NON_NEGATIVE: bool>(self, new_input: Size) -> Self
+    where
+        M: ApplyMorphism<Size, Cost, NON_NEGATIVE>,
+    {
+        let mut applied_morphisms = vec![];
+        let first = self.morphisms.first();
+        let mut output = first.morphism.metadata.apply(new_input.clone());
+        applied_morphisms.push(AppliedMorphism {
+            morphism: first.morphism.clone(),
+            source: (first.source.0.clone(), new_input),
+            target: (first.source.0.clone(), output.size.clone()),
+        });
+        for item in self.morphisms.iter_rest() {
+            let input = output.size;
+            output = item.morphism.metadata.apply(input.clone());
+            applied_morphisms.push(AppliedMorphism {
+                morphism: item.morphism.clone(),
+                source: (item.source.0.clone(), input),
+                target: (item.source.0.clone(), output.size.clone()),
+            });
+        }
+
+        Self {
+            morphisms: applied_morphisms.try_into().expect("first() guarantees >1"),
+            cost: output.cost,
+        }
+    }
+}
+
+impl<Id, M, Obj, Size, Cost, const NON_NEGATIVE: bool> ApplyMorphism<Size, Cost, NON_NEGATIVE>
+    for AppliedCompositeMorphism<Id, M, Obj, Size, Cost>
+where
+    Id: Key,
+    Obj: Object<Id>,
+    M: MorphismMeta + ApplyMorphism<Size, Cost, NON_NEGATIVE>,
+    Size: Clone,
+{
+    fn apply(&self, input: Size) -> MorphismOutput<Size, Cost> {
+        let mut output = self.morphisms.first().morphism.metadata.apply(input);
+        for item in self.morphisms.iter_rest() {
+            output = item.morphism.metadata.apply(output.size);
+        }
+        output
+    }
 }
 
 ////////////////////////////////////////
@@ -85,7 +136,7 @@ impl_!(From<WellFormedPath> for Path {
     }
 });
 
-impl_!(From<WellFormedPath> for CompositeMorphism {
+impl_!(From<WellFormedPath> for AppliedCompositeMorphism {
     fn from(value: WellFormedPath<Id, M, Obj, Size, Cost>) -> Self {
         value
             .0
@@ -94,7 +145,7 @@ impl_!(From<WellFormedPath> for CompositeMorphism {
     }
 });
 
-impl_!(TryFrom<Path> for CompositeMorphism {
+impl_!(TryFrom<Path> for AppliedCompositeMorphism {
     type Error = InvalidPath;
 
     fn try_from(value: Path<Id, M, Obj, Size, Cost>) -> Result<Self, Self::Error> {
@@ -140,14 +191,14 @@ impl_!(TryFrom<Path> for CompositeMorphism {
     }
 });
 
-impl_!(Replace<Cost> for CompositeMorphism {
-    type With<U> = CompositeMorphism<Id, M, Obj, Size, U>;
+impl_!(Replace<Cost> for AppliedCompositeMorphism {
+    type With<U> = AppliedCompositeMorphism<Id, M, Obj, Size, U>;
     fn read(&self) -> &Cost {
         &self.cost
     }
     fn replace<R>(self, item: R) -> (Self::With<R>, Cost) {
         (
-            CompositeMorphism {
+            AppliedCompositeMorphism {
                 morphisms: self.morphisms,
                 cost: item,
             },
@@ -230,14 +281,14 @@ macro_rules! structs {
             $(
                 ($($tuple_fields)*) where
                     Id: Key,
-                    Obj: HasId<Id>,
+                    Obj: Object<Id>,
                     M: MorphismMeta,
                     Size: Clone;
             )?
             $(
                 where
                     Id: Key,
-                    Obj: HasId<Id>,
+                    Obj: Object<Id>,
                     M: MorphismMeta,
                     Size: Clone,
                 { $($named_fields)* }
@@ -260,7 +311,7 @@ macro_rules! impl_ {
         impl<$($_generic,)? Id, M, Obj, Size, Cost> $($_trait for)? $PathType<Id, M, Obj, Size, Cost>
             where
                 Id: Key,
-                Obj: HasId<Id>,
+                Obj: Object<Id>,
                 M: MorphismMeta,
                 Size: Clone
                 { $($args)* }

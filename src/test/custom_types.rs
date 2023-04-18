@@ -26,7 +26,7 @@ impl ApplyMorphism<Float, Float, true> for MyMorphMeta {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct MyObject {
     id: MyObjId,
     _data: &'static str,

@@ -54,6 +54,10 @@ impl<T> SomeVec<T> {
         self.start.iter().chain(self.rest.iter())
     }
 
+    pub fn iter_rest(&self) -> Iter<T> {
+        self.rest.iter()
+    }
+
     pub fn into_iter(self) -> Chain<array::IntoIter<T, 1>, vec::IntoIter<T>> {
         self.start.into_iter().chain(self.rest.into_iter())
     }

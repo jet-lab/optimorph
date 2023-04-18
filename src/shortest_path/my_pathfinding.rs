@@ -1,7 +1,7 @@
 use std::hash::Hash;
 
-use crate::category::HasId;
 use crate::category::Key;
+use crate::category::Object;
 use crate::morphism::ApplyMorphism;
 use crate::morphism::MorphismMeta;
 use crate::vertex::LeanVertex;
@@ -15,16 +15,16 @@ use super::path::{Path, WellFormedPath};
 
 pub fn shortest_single_path_with_dijkstra<
     Id: Key,
-    Object: HasId<Id>,
+    Obj: Object<Id>,
     M: MorphismMeta + ApplyMorphism<Size, Cost, true>,
     Size: PathfindingSize,
     Cost: PathfindingCost,
 >(
-    category: &Category<Id, M, Object>,
+    category: &Category<Id, M, Obj>,
     source: Id,
     target: Id,
     input_size: Size,
-) -> Option<WellFormedPath<Id, M, Object, Size, Cost>> {
+) -> Option<WellFormedPath<Id, M, Obj, Size, Cost>> {
     if source == target || category.get_object(&source).is_none() {
         return None;
     }

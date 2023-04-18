@@ -2,7 +2,6 @@ use std::{
     collections::{hash_map::Entry, hash_set, HashMap, HashSet},
     fmt::Debug,
     hash::Hash,
-    rc::Rc,
 };
 use thiserror::Error;
 
@@ -10,6 +9,9 @@ use crate::{
     impls::SimpleMorphism,
     morphism::{Morphism, MorphismMeta},
 };
+
+pub trait Object<Id: Key>: HasId<Id> + Clone {}
+impl<Id: Key, T> Object<Id> for T where T: HasId<Id> + Clone {}
 
 /// todo should Id be an associated type?
 pub trait HasId<Id: Key> {
@@ -26,21 +28,21 @@ pub trait Key: Eq + Hash + Debug + Clone {}
 impl<K: Eq + Hash + Debug + Clone> Key for K {}
 
 #[derive(Debug)]
-pub struct Category<Id = String, M = SimpleMorphism, Object = Id>
+pub struct Category<Id = String, M = SimpleMorphism, Obj = Id>
 where
     Id: Key,
-    Object: HasId<Id>,
+    Obj: Object<Id>,
     M: MorphismMeta,
 {
-    objects: HashMap<Id, Rc<Object>>,
+    objects: HashMap<Id, Obj>,
     morphisms: HashSet<Morphism<Id, M>>,
     outbound: HashMap<Id, Vec<Morphism<Id, M>>>,
 }
 
-impl<Id, M, Object> Clone for Category<Id, M, Object>
+impl<Id, M, Obj> Clone for Category<Id, M, Obj>
 where
     Id: Key,
-    Object: HasId<Id>,
+    Obj: Object<Id>,
     M: MorphismMeta,
 {
     fn clone(&self) -> Self {
@@ -61,19 +63,19 @@ where
         let mut new = Self::new();
         for morphism in morphisms {
             new.objects
-                .insert(morphism.source.clone(), Rc::new(morphism.source.clone()));
+                .insert(morphism.source.clone(), morphism.source.clone());
             new.objects
-                .insert(morphism.target.clone(), Rc::new(morphism.target.clone()));
+                .insert(morphism.target.clone(), morphism.target.clone());
             new.add_morphism_unchecked(morphism);
         }
         new
     }
 }
 
-impl<Id, M, Object> Default for Category<Id, M, Object>
+impl<Id, M, Obj> Default for Category<Id, M, Obj>
 where
     Id: Key,
-    Object: HasId<Id>,
+    Obj: Object<Id>,
     M: MorphismMeta,
 {
     fn default() -> Self {
@@ -81,10 +83,10 @@ where
     }
 }
 
-impl<Id, M, Object> Category<Id, M, Object>
+impl<Id, M, Obj> Category<Id, M, Obj>
 where
     Id: Key,
-    Object: HasId<Id>,
+    Obj: Object<Id>,
     M: MorphismMeta,
 {
     pub fn new() -> Self {
@@ -96,7 +98,7 @@ where
     }
 
     pub fn of(
-        objects: impl IntoIterator<Item = Object>,
+        objects: impl IntoIterator<Item = Obj>,
         morphisms: impl IntoIterator<Item = Morphism<Id, M>>,
     ) -> Result<Self, CategoryError> {
         let mut new = Self::new();
@@ -108,7 +110,7 @@ where
 
     pub fn add_objects(
         &mut self,
-        objects: impl IntoIterator<Item = Object>,
+        objects: impl IntoIterator<Item = Obj>,
     ) -> Result<(), CategoryError> {
         for object in objects {
             self.add_object(object)?;
@@ -126,12 +128,12 @@ where
         Ok(())
     }
 
-    pub fn add_object(&mut self, object: Object) -> Result<(), CategoryError> {
+    pub fn add_object(&mut self, object: Obj) -> Result<(), CategoryError> {
         let id = object.id();
         match self.objects.entry(id.clone()) {
             Entry::Occupied(_) => return Err(ObjectAlreadyInserted(format!("{:?}", object.id()))),
             Entry::Vacant(x) => {
-                x.insert(Rc::new(object));
+                x.insert(object);
             }
         };
         if self.outbound.insert(id, Vec::new()).is_some() {
@@ -180,8 +182,8 @@ where
         self.outbound.get(id)
     }
 
-    pub fn get_object(&self, id: &Id) -> Option<Rc<Object>> {
-        self.objects.get(id).map(Clone::clone)
+    pub fn get_object(&self, id: &Id) -> Option<&Obj> {
+        self.objects.get(id)
     }
 
     // pub fn objects(&self) -> hash_map::Iter<Id, Rc<Object>> {
@@ -195,7 +197,7 @@ where
     pub fn destruct(
         self,
     ) -> (
-        HashMap<Id, Rc<Object>>,
+        HashMap<Id, Obj>,
         HashSet<Morphism<Id, M>>,
         HashMap<Id, Vec<Morphism<Id, M>>>,
     ) {

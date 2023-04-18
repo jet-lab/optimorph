@@ -8,7 +8,7 @@ use std::convert::Infallible;
 use petgraph::algo::FloatMeasure;
 
 use crate::{
-    category::{Category, HasId, Key},
+    category::{Category, Key, Object},
     morphism::{ApplyMorphism, MorphismMeta},
 };
 
@@ -36,15 +36,15 @@ where
 {
     type Error<Id: Key, O> = Infallible;
 
-    fn shortest_path<Id, O>(
-        category: &Category<Id, M, O>,
+    fn shortest_path<Id, Obj>(
+        category: &Category<Id, M, Obj>,
         source: Id,
         target: Id,
         input_size: Size,
-    ) -> Result<Option<WellFormedPath<Id, M, O, Size, Cost>>, Infallible>
+    ) -> Result<Option<WellFormedPath<Id, M, Obj, Size, Cost>>, Infallible>
     where
         Id: Key,
-        O: HasId<Id>,
+        Obj: Object<Id>,
     {
         Ok(my_pathfinding::shortest_single_path_with_dijkstra(
             category, source, target, input_size,
@@ -73,15 +73,15 @@ where
 {
     type Error<Id: Key, O> = PathFindingError<Id>;
 
-    fn shortest_path<Id, O>(
-        category: &Category<Id, M, O>,
+    fn shortest_path<Id, Obj>(
+        category: &Category<Id, M, Obj>,
         source: Id,
         target: Id,
         input_size: Size,
-    ) -> Result<Option<WellFormedPath<Id, M, O, Size, Cost>>, PathFindingError<Id>>
+    ) -> Result<Option<WellFormedPath<Id, M, Obj, Size, Cost>>, PathFindingError<Id>>
     where
         Id: Key,
-        O: HasId<Id>,
+        Obj: Object<Id>,
     {
         my_petgraph::shortest_single_path_with_bellman_ford(category, source, target, input_size)
     }

@@ -3,13 +3,12 @@
 //! edges in the graph represent the fact that objects and morphisms are
 //! connected.
 
-use std::{hash::Hash, rc::Rc};
+use std::hash::Hash;
 
 use pathfinding::num_traits::Zero;
 
 use crate::{
-    category::HasId,
-    category::{Category, Key},
+    category::{Category, Key, Object},
     impls::Float,
     morphism::ApplyMorphism,
     morphism::{Morphism, MorphismMeta},
@@ -17,27 +16,27 @@ use crate::{
 
 /// Comprehensive return type that includes the full object
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub enum Vertex<Id, M, Object = Id, Size = Float>
+pub enum Vertex<Id, M, Obj = Id, Size = Float>
 where
-    Object: HasId<Id>,
+    Obj: Object<Id>,
     Id: Key,
     M: MorphismMeta,
 {
-    Object { inner: Rc<Object>, size: Size },
+    Object { inner: Obj, size: Size },
     Morphism { inner: Morphism<Id, M>, input: Size },
 }
 
-impl<Object, Id, M, Size> Vertex<Id, M, Object, Size>
+impl<Obj, Id, M, Size> Vertex<Id, M, Obj, Size>
 where
-    Object: HasId<Id>,
+    Obj: Object<Id>,
     Id: Key,
     M: MorphismMeta,
     Size: Clone,
 {
-    pub(crate) fn from(lean: LeanVertex<Id, M, Size>, category: &Category<Id, M, Object>) -> Self {
+    pub(crate) fn from(lean: LeanVertex<Id, M, Size>, category: &Category<Id, M, Obj>) -> Self {
         match lean {
             LeanVertex::Object { id, size } => Self::Object {
-                inner: category.get_object(&id).unwrap(), //todo
+                inner: category.get_object(&id).unwrap().clone(), //todo unwrap
                 size,
             },
             LeanVertex::Morphism { inner, input } => Self::Morphism { inner, input },
@@ -95,9 +94,9 @@ where
     M: MorphismMeta,
     Size: Clone,
 {
-    pub fn successors<const NON_NEGATIVE: bool, Object: HasId<Id>, Cost: Zero>(
+    pub fn successors<const NON_NEGATIVE: bool, Obj: Object<Id>, Cost: Zero>(
         &self,
-        category: &Category<Id, M, Object>,
+        category: &Category<Id, M, Obj>,
     ) -> Vec<(LeanVertex<Id, M, Size>, Cost)>
     where
         M: ApplyMorphism<Size, Cost, NON_NEGATIVE>,

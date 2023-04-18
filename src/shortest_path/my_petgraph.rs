@@ -8,8 +8,7 @@ use petgraph::{
 use thiserror::Error;
 
 use crate::{
-    category::HasId,
-    category::{Category, Key},
+    category::{Category, Key, Object},
     morphism::ApplyMorphism,
     morphism::MorphismMeta,
     vertex::{LeanVertex, Vertex},
@@ -18,16 +17,16 @@ use crate::{
 pub fn shortest_single_path_with_bellman_ford<
     const NON_NEGATIVE: bool,
     Id: Key,
-    Object: HasId<Id>,
+    Obj: Object<Id>,
     M: MorphismMeta + ApplyMorphism<Size, Cost, NON_NEGATIVE>,
     Size: Clone,
     Cost: FloatMeasure,
 >(
-    category: &Category<Id, M, Object>,
+    category: &Category<Id, M, Obj>,
     source: Id,
     target: Id,
     input_size: Size, // used for all morphisms - accumulation is not supported
-) -> Result<Option<WellFormedPath<Id, M, Object, Size, Cost>>, PathFindingError<Id>> {
+) -> Result<Option<WellFormedPath<Id, M, Obj, Size, Cost>>, PathFindingError<Id>> {
     if source == target || category.get_object(&source).is_none() {
         return Ok(None);
     }
@@ -98,8 +97,8 @@ where
     Size: Clone,
     Cost: FloatMeasure,
 {
-    fn new<Object: HasId<Id>>(
-        category: &Category<Id, M, Object>,
+    fn new<Obj: Object<Id>>(
+        category: &Category<Id, M, Obj>,
         input_size: Size,
     ) -> CategoryGraph<Id, M, Size, Cost, NON_NEGATIVE> {
         let mut graph = Graph::new();

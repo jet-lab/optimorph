@@ -1,13 +1,16 @@
-use std::{hash::Hash, rc::Rc};
+use std::hash::Hash;
+
+use pathfinding::num_traits::Zero;
 
 use crate::{
-    category::{Category, HasId, Key},
+    category::{Category, Key, Object},
+    collections::SomeVec,
     impls::Float,
     vertex::LeanVertex,
 };
 
-pub trait MorphismMeta: Hash + Eq {}
-impl<M> MorphismMeta for M where M: Hash + Eq {}
+pub trait MorphismMeta: Hash + Eq + Clone {}
+impl<M> MorphismMeta for M where M: Hash + Eq + Clone {}
 
 #[derive(Debug)]
 pub struct Morphism<Id, M>
@@ -23,7 +26,7 @@ where
     ///   must be unique.
     /// - Logic to determine cost and output size from applying the morphism. It
     ///   should implement some variant of ApplyMorphism in order to be useful.
-    pub metadata: Rc<M>,
+    pub metadata: M,
 }
 
 impl<Id, M> Clone for Morphism<Id, M>
@@ -52,7 +55,7 @@ where
         Self {
             source: source.into(),
             target: target.into(),
-            metadata: Rc::new(metadata.into()),
+            metadata: metadata.into(),
         }
     }
 }
@@ -66,14 +69,14 @@ where
         Self {
             source,
             target,
-            metadata: Rc::new(metadata.into()),
+            metadata: metadata.into(),
         }
     }
 
     /// Needed for `pathfinding`
-    pub(crate) fn successors<const NON_NEGATIVE: bool, Object: HasId<Id>, Size: Clone, Cost>(
+    pub(crate) fn successors<const NON_NEGATIVE: bool, Obj: Object<Id>, Size: Clone, Cost>(
         &self,
-        category: &Category<Id, M, Object>,
+        category: &Category<Id, M, Obj>,
         input_size: Size,
     ) -> Vec<(LeanVertex<Id, M, Size>, Cost)>
     where
@@ -154,3 +157,41 @@ pub struct MorphismOutput<Size = Float, Cost = Float> {
     pub size: Size,
     pub cost: Cost,
 }
+
+impl<Size, Cost: Zero> MorphismOutput<Size, Cost> {
+    pub fn free(size: Size) -> Self {
+        Self {
+            size,
+            cost: Cost::zero(),
+        }
+    }
+}
+
+pub struct CompositeMorphism<Id, M>(pub SomeVec<Morphism<Id, M>>)
+where
+    Id: Key,
+    M: MorphismMeta;
+
+impl<Id, M, Size, Cost, const NON_NEGATIVE: bool> ApplyMorphism<Size, Cost, NON_NEGATIVE>
+    for CompositeMorphism<Id, M>
+where
+    Id: Key,
+    M: MorphismMeta + ApplyMorphism<Size, Cost, NON_NEGATIVE>,
+    Size: Clone,
+{
+    fn apply(&self, input: Size) -> MorphismOutput<Size, Cost> {
+        let mut output = self.0.first().metadata.apply(input);
+        for item in self.0.iter_rest() {
+            output = item.metadata.apply(output.size);
+        }
+        output
+    }
+}
+
+/// A "free" morphism has zero cost and passes through the input untouched.
+pub trait FreeMorphism: Sized + Clone {
+    fn free<Cost: Zero>(&self) -> MorphismOutput<Self, Cost> {
+        MorphismOutput::free(self.clone())
+    }
+}
+impl<T: Sized + Clone> FreeMorphism for T {}
