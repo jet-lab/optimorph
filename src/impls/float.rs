@@ -32,6 +32,13 @@ impl Add for Float {
         Self(self.0.add(rhs.0))
     }
 }
+impl Add for &Float {
+    type Output = Float;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        Float(self.0.add(rhs.0))
+    }
+}
 
 impl AddAssign for Float {
     fn add_assign(&mut self, rhs: Self) {
@@ -44,6 +51,13 @@ impl Sub for Float {
 
     fn sub(self, rhs: Self) -> Self::Output {
         Self(self.0.sub(rhs.0))
+    }
+}
+impl Sub for &Float {
+    type Output = Float;
+
+    fn sub(self, rhs: Self) -> Self::Output {
+        Float(self.0.sub(rhs.0))
     }
 }
 
@@ -60,6 +74,13 @@ impl Neg for Float {
         Self(-self.0)
     }
 }
+impl Neg for &Float {
+    type Output = Float;
+
+    fn neg(self) -> Self::Output {
+        Float(-self.0)
+    }
+}
 
 impl Mul for Float {
     type Output = Float;
@@ -68,12 +89,26 @@ impl Mul for Float {
         Self(self.0.mul(rhs.0))
     }
 }
+impl Mul for &Float {
+    type Output = Float;
+
+    fn mul(self, rhs: Self) -> Self::Output {
+        Float(self.0.mul(rhs.0))
+    }
+}
 
 impl Div for Float {
     type Output = Float;
 
     fn div(self, rhs: Self) -> Self::Output {
         Self(self.0.div(rhs.0))
+    }
+}
+impl Div for &Float {
+    type Output = Float;
+
+    fn div(self, rhs: Self) -> Self::Output {
+        Float(self.0.div(rhs.0))
     }
 }
 

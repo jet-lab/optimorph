@@ -70,20 +70,20 @@ where
         M: ApplyMorphism<Size, Cost, NON_NEGATIVE>,
     {
         let mut applied_morphisms = vec![];
-        let first = self.morphisms.first();
+        let (first, rest) = self.morphisms.destruct();
         let mut output = first.morphism.metadata.apply(new_input.clone());
         applied_morphisms.push(AppliedMorphism {
-            morphism: first.morphism.clone(),
-            source: (first.source.0.clone(), new_input),
-            target: (first.source.0.clone(), output.size.clone()),
+            morphism: first.morphism,
+            source: (first.source.0, new_input),
+            target: (first.target.0, output.size.clone()),
         });
-        for item in self.morphisms.iter_rest() {
+        for item in rest {
             let input = output.size;
             output = item.morphism.metadata.apply(input.clone());
             applied_morphisms.push(AppliedMorphism {
-                morphism: item.morphism.clone(),
-                source: (item.source.0.clone(), input),
-                target: (item.source.0.clone(), output.size.clone()),
+                morphism: item.morphism,
+                source: (item.source.0, input),
+                target: (item.target.0, output.size.clone()),
             });
         }
 

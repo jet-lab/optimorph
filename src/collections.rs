@@ -26,6 +26,11 @@ impl<T> SomeVec<T> {
         &self.start[0]
     }
 
+    pub fn destruct(self) -> (T, Vec<T>) {
+        let [first] = self.start;
+        (first, self.rest)
+    }
+
     pub fn last(&self) -> &T {
         if self.rest.len() == 0 {
             &self.start[0]
