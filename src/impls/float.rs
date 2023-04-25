@@ -56,6 +56,30 @@ impl Neg for &Float {
     }
 }
 
+impl<T: Into<f64>> From<T> for Float {
+    fn from(value: T) -> Self {
+        Self(OrderedFloat(value.into()))
+    }
+}
+
+impl Zero for Float {
+    fn zero() -> Self {
+        ZERO
+    }
+    fn is_zero(&self) -> bool {
+        self == &ZERO
+    }
+}
+
+impl FloatMeasure for Float {
+    fn zero() -> Self {
+        ZERO
+    }
+    fn infinite() -> Self {
+        Float(OrderedFloat(f64::INFINITY))
+    }
+}
+
 impl_math!(Add::add, Sub::sub, Mul::mul, Div::div);
 impl_math! {
     AddAssign::add_assign => add,
@@ -121,29 +145,5 @@ impl Float {
     /// keep this private, only for macro
     fn inner(&self) -> OrderedFloat<f64> {
         self.0
-    }
-}
-
-impl<T: Into<f64>> From<T> for Float {
-    fn from(value: T) -> Self {
-        Self(OrderedFloat(value.into()))
-    }
-}
-
-impl Zero for Float {
-    fn zero() -> Self {
-        ZERO
-    }
-    fn is_zero(&self) -> bool {
-        self == &ZERO
-    }
-}
-
-impl FloatMeasure for Float {
-    fn zero() -> Self {
-        ZERO
-    }
-    fn infinite() -> Self {
-        Float(OrderedFloat(f64::INFINITY))
     }
 }
