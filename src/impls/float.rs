@@ -1,27 +1,42 @@
-use std::ops::{Add, AddAssign, Div, Mul, Neg, Sub, SubAssign};
+use std::{
+    fmt::Debug,
+    ops::{Add, AddAssign, Div, Mul, Neg, Sub, SubAssign},
+};
 
 use ordered_float::OrderedFloat;
 use pathfinding::num_traits::Zero;
 use petgraph::algo::FloatMeasure;
 
 pub const ZERO: Float = Float(OrderedFloat(0.0));
+pub const ONE: Float = Float(OrderedFloat(1.0));
+pub const INFINITY: Float = Float(OrderedFloat(f64::INFINITY));
 
 /// Basic floating point number that implements all the traits necessary to be
 /// used as a Size or a Cost
-#[derive(Clone, Copy, Default, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Copy, Default, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Float(OrderedFloat<f64>);
 
 impl Float {
     pub fn to_f64(self) -> f64 {
         self.0 .0
     }
-    
+
     pub fn abs(self) -> Float {
         if self < ZERO {
             -self
         } else {
             self
         }
+    }
+}
+
+pub const fn float(x: f64) -> Float {
+    Float(OrderedFloat(x))
+}
+
+impl Debug for Float {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Float({:?})", self.0)
     }
 }
 
@@ -131,7 +146,6 @@ impl FloatMeasure for Float {
     fn zero() -> Self {
         ZERO
     }
-
     fn infinite() -> Self {
         Float(OrderedFloat(f64::INFINITY))
     }

@@ -5,6 +5,9 @@ use std::{array, iter::Chain, slice::Iter, vec};
 pub trait Replace<T> {
     type With<U>: Replace<U>;
     fn read(&self) -> &T;
+    /// Self contains some value of type T. This method replaces that item of
+    /// type T with a new value of a *different* type, R. The returned type
+    /// is a variant of Self containing the new type.
     fn replace<R>(self, item: R) -> (Self::With<R>, T);
 }
 
