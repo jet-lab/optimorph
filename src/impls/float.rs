@@ -1,15 +1,15 @@
 use std::{
     fmt::Debug,
-    ops::{Add, AddAssign, Div, Mul, Neg, Sub, SubAssign},
+    ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign},
 };
 
 use ordered_float::OrderedFloat;
 use pathfinding::num_traits::Zero;
 use petgraph::algo::FloatMeasure;
 
-pub const ZERO: Float = Float(OrderedFloat(0.0));
-pub const ONE: Float = Float(OrderedFloat(1.0));
-pub const INFINITY: Float = Float(OrderedFloat(f64::INFINITY));
+pub const ZERO: Float = float(0.0);
+pub const ONE: Float = float(1.0);
+pub const INFINITY: Float = float(f64::INFINITY);
 
 /// Basic floating point number that implements all the traits necessary to be
 /// used as a Size or a Cost
@@ -40,48 +40,6 @@ impl Debug for Float {
     }
 }
 
-impl Add for Float {
-    type Output = Self;
-
-    fn add(self, rhs: Self) -> Self::Output {
-        Self(self.0.add(rhs.0))
-    }
-}
-impl Add for &Float {
-    type Output = Float;
-
-    fn add(self, rhs: Self) -> Self::Output {
-        Float(self.0.add(rhs.0))
-    }
-}
-
-impl AddAssign for Float {
-    fn add_assign(&mut self, rhs: Self) {
-        *self = *self + rhs
-    }
-}
-
-impl Sub for Float {
-    type Output = Self;
-
-    fn sub(self, rhs: Self) -> Self::Output {
-        Self(self.0.sub(rhs.0))
-    }
-}
-impl Sub for &Float {
-    type Output = Float;
-
-    fn sub(self, rhs: Self) -> Self::Output {
-        Float(self.0.sub(rhs.0))
-    }
-}
-
-impl SubAssign for Float {
-    fn sub_assign(&mut self, rhs: Self) {
-        *self = *self - rhs
-    }
-}
-
 impl Neg for Float {
     type Output = Self;
 
@@ -89,6 +47,7 @@ impl Neg for Float {
         Self(-self.0)
     }
 }
+
 impl Neg for &Float {
     type Output = Float;
 
@@ -97,33 +56,71 @@ impl Neg for &Float {
     }
 }
 
-impl Mul for Float {
-    type Output = Float;
-
-    fn mul(self, rhs: Self) -> Self::Output {
-        Self(self.0.mul(rhs.0))
-    }
-}
-impl Mul for &Float {
-    type Output = Float;
-
-    fn mul(self, rhs: Self) -> Self::Output {
-        Float(self.0.mul(rhs.0))
-    }
+impl_math!(Add::add, Sub::sub, Mul::mul, Div::div);
+impl_math! {
+    AddAssign::add_assign => add,
+    SubAssign::sub_assign => sub,
+    MulAssign::mul_assign => mul,
+    DivAssign::div_assign => div
 }
 
-impl Div for Float {
-    type Output = Float;
+macro_rules! impl_math {
+    ($($Trait:ident::$method:ident),*$(,)*) => {
+        $(
+            impl_math!($Trait::$method for Float:inner | Float:inner);
+            impl_math!($Trait::$method for Float:inner | &Float:inner);
+            impl_math!($Trait::$method for Float:inner | f64:to_ordered);
+            impl_math!($Trait::$method for Float:inner | &f64:to_ordered);
+            impl_math!($Trait::$method for f64:to_ordered | Float:inner);
+            impl_math!($Trait::$method for f64:to_ordered | &Float:inner);
+            impl_math!($Trait::$method for &Float:inner | Float:inner);
+            impl_math!($Trait::$method for &Float:inner | &Float:inner);
+            impl_math!($Trait::$method for &Float:inner | f64:to_ordered);
+            impl_math!($Trait::$method for &Float:inner | &f64:to_ordered);
+            impl_math!($Trait::$method for &f64:to_ordered | Float:inner);
+            impl_math!($Trait::$method for &f64:to_ordered | &Float:inner);
+        )*
+    };
+    ($($Trait:ident::$method:ident => $sub_method:ident),*$(,)*) => {
+        $(
+            impl_math!($Trait::$method for Float:inner | Float:inner => $sub_method);
+            impl_math!($Trait::$method for Float:inner | &Float:inner => $sub_method);
+            impl_math!($Trait::$method for Float:inner | f64:to_ordered => $sub_method);
+            impl_math!($Trait::$method for Float:inner | &f64:to_ordered => $sub_method);
+        )*
+    };
+    ($Trait:ident::$method:ident for $For:ty$(:$l_accessor:ident)? | $Rhs:ty$(:$r_accessor:ident)?) => {
+        impl $Trait<$Rhs> for $For {
+            type Output = Float;
 
-    fn div(self, rhs: Self) -> Self::Output {
-        Self(self.0.div(rhs.0))
+            fn $method(self, rhs: $Rhs) -> Self::Output {
+                Float(self$(.$l_accessor())?.$method(rhs$(.$r_accessor())?))
+            }
+        }
+    };
+    ($Trait:ident::$method:ident for $For:ty$(:$l_accessor:ident)? | $Rhs:ty$(:$r_accessor:ident)? => $sub_method:ident) => {
+        impl $Trait<$Rhs> for $For {
+            fn $method(&mut self, rhs: $Rhs) {
+                *self = self.$sub_method(rhs).clone()
+            }
+        }
+    };
+}
+use impl_math;
+
+/// keep this private, only for macro
+trait ToOrdered {
+    fn to_ordered(self) -> OrderedFloat<f64>;
+}
+impl ToOrdered for f64 {
+    fn to_ordered(self) -> OrderedFloat<f64> {
+        self.into()
     }
 }
-impl Div for &Float {
-    type Output = Float;
-
-    fn div(self, rhs: Self) -> Self::Output {
-        Float(self.0.div(rhs.0))
+impl Float {
+    /// keep this private, only for macro
+    fn inner(&self) -> OrderedFloat<f64> {
+        self.0
     }
 }
 
