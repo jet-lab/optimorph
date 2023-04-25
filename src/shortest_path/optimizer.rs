@@ -30,16 +30,25 @@ where
     fn shortest_paths<Id, Obj>(
         category: &Category<Id, M, Obj>,
         sources: Vec<(Id, Size)>,
-        target: Vec<Id>,
+        targets: Vec<Id>,
     ) -> Result<Vec<WellFormedPath<Id, M, Obj, Size, Cost>>, Self::Error<Id, Obj>>
     where
         Id: Key,
         Obj: Object<Id>,
     {
-        sources
+        let mut results = vec![];
+        for (source, input) in sources {
+            for target in targets.clone() {
+                results.push(Self::shortest_path(
+                    category,
+                    source.clone(),
+                    target,
+                    input.clone(),
+                ));
+            }
+        }
+        results
             .into_iter()
-            .zip(target)
-            .map(|((source, input), target)| Self::shortest_path(category, source, target, input))
             .filter_map(|x| match x {
                 Ok(Some(ok)) => Some(Ok(ok)),
                 Ok(None) => None,
@@ -68,7 +77,7 @@ where
         Obj: Object<Id>,
         Score: Ord + Clone,
         PathRet: From<WellFormedPath<Id, M, Obj, Size, Cost>> + Replace<Cost>,
-        Calculator: Fn(&PathRet) -> Score
+        Calculator: Fn(&PathRet) -> Score,
     {
         let mut paths = Self::shortest_paths(category, sources, targets)?
             .into_iter()
