@@ -1,4 +1,4 @@
-use std::{ops::Deref};
+use std::ops::Deref;
 
 use thiserror::Error;
 
@@ -46,7 +46,7 @@ structs!(// <Id, M, Obj = Id, Size = Float, Cost = Float>
 
 /// A heavyweight version of Morphism that includes the full input and output
 /// objects plus their sizes since this is applied in a path.
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct AppliedMorphism<Id, M, Obj = Id, Size = Float>
 where
     Id: Key,
@@ -56,6 +56,22 @@ where
     pub morphism: Morphism<Id, M>,
     pub source: (Obj, Size),
     pub target: (Obj, Size),
+}
+
+impl<Id, M, Obj, Size> std::fmt::Debug for AppliedMorphism<Id, M, Obj, Size>
+where
+    Id: Key + std::fmt::Debug,
+    Obj: Object<Id> + std::fmt::Debug,
+    M: MorphismMeta + std::fmt::Debug,
+    Size: std::fmt::Debug,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("AppliedMorphism")
+            .field("morphism", &self.morphism.metadata)
+            .field("source", &self.source)
+            .field("target", &self.target)
+            .finish()
+    }
 }
 
 impl<Id, M, Obj, Size, Cost> AppliedCompositeMorphism<Id, M, Obj, Size, Cost>
