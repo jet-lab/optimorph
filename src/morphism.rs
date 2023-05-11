@@ -1,4 +1,4 @@
-use std::hash::Hash;
+use std::{fmt::Display, hash::Hash};
 
 use pathfinding::num_traits::Zero;
 
@@ -27,6 +27,31 @@ where
     /// - Logic to determine cost and output size from applying the morphism. It
     ///   should implement some variant of ApplyMorphism in order to be useful.
     pub metadata: M,
+}
+
+impl<Id, M> Display for Morphism<Id, M>
+where
+    Id: Key + Display,
+    M: MorphismMeta + Display,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let alt = f.alternate();
+        let nl = if alt { "\n" } else { " " };
+        let indent = if alt { "  " } else { "" };
+        Display::fmt(&self.metadata, f)?;
+        f.write_str(if alt { ":\n" } else { "{ " })?;
+        // source
+        f.write_str(indent)?;
+        f.write_str(if alt { "┌──" } else { "" })?;
+        Display::fmt(&self.source, f)?;
+        f.write_str(nl)?;
+        // target
+        f.write_str(indent)?;
+        f.write_str(if alt { "└─▶" } else { "─▶ " })?;
+        Display::fmt(&self.target, f)?;
+        //
+        f.write_str(if alt { "" } else { " }" })
+    }
 }
 
 impl<Id, M> Clone for Morphism<Id, M>

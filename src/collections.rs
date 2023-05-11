@@ -1,6 +1,14 @@
 //! Generic container types that have nothing to do with graphs or categories.
 
-use std::{array, iter::Chain, slice::Iter, vec};
+use std::{
+    array,
+    fmt::{Debug, Display},
+    iter::Chain,
+    slice::Iter,
+    vec,
+};
+
+use crate::DebugWithDisplay;
 
 pub trait Replace<T> {
     type With<U>: Replace<U>;
@@ -12,7 +20,7 @@ pub trait Replace<T> {
 }
 
 /// A Vec that is guaranteed not to be empty
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct SomeVec<T> {
     start: [T; 1],
     rest: Vec<T>,
@@ -35,7 +43,7 @@ impl<T> SomeVec<T> {
     }
 
     pub fn last(&self) -> &T {
-        if self.rest.len() == 0 {
+        if self.rest.is_empty() {
             &self.start[0]
         } else {
             &self.rest[self.rest.len() - 1]
@@ -83,5 +91,23 @@ impl<T> TryFrom<Vec<T>> for SomeVec<T> {
             start: [first],
             rest: value,
         })
+    }
+}
+
+impl<T: Debug> Debug for SomeVec<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_list()
+            .entries(&self.start)
+            .entries(&self.rest)
+            .finish()
+    }
+}
+
+impl<T: Display> Display for SomeVec<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_list()
+            .entries(self.start.iter().map(DebugWithDisplay))
+            .entries(self.rest.iter().map(DebugWithDisplay))
+            .finish()
     }
 }

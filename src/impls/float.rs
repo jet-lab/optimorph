@@ -1,5 +1,5 @@
 use std::{
-    fmt::Debug,
+    fmt::{Debug, Display},
     ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign},
 };
 
@@ -15,6 +15,12 @@ pub const INFINITY: Float = float(f64::INFINITY);
 /// used as a Size or a Cost
 #[derive(Clone, Copy, Default, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Float(OrderedFloat<f64>);
+
+impl Display for Float {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        Display::fmt(&self.0 .0, f)
+    }
+}
 
 impl Float {
     pub fn to_f64(self) -> f64 {

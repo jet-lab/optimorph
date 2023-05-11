@@ -44,7 +44,7 @@ pub fn shortest_single_path_with_bellman_ford<
     let mut work_back = target_index;
     while work_back != source_index {
         path.push(work_back);
-        if let None = paths.predecessors[work_back.index()] {
+        if paths.predecessors[work_back.index()].is_none() {
             return Ok(None);
         }
         work_back = paths.predecessors[work_back.index()].unwrap();

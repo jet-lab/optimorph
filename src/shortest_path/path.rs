@@ -1,4 +1,4 @@
-use std::ops::Deref;
+use std::{fmt::Display, ops::Deref};
 
 use thiserror::Error;
 
@@ -71,6 +71,37 @@ where
             .field("source", &self.source)
             .field("target", &self.target)
             .finish()
+    }
+}
+
+impl<Id, M, Obj, Size> Display for AppliedMorphism<Id, M, Obj, Size>
+where
+    Id: Key + Display,
+    Obj: Object<Id>,
+    M: MorphismMeta + Display,
+    Size: Display,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let alt = f.alternate();
+        let nl = if alt { "\n" } else { " " };
+        let indent = if alt { "  " } else { "" };
+        Display::fmt(&self.morphism.metadata, f)?;
+        f.write_str(if alt { ":\n" } else { "{ " })?;
+        // source
+        f.write_str(indent)?;
+        f.write_str(if alt { "┌──" } else { "" })?;
+        Display::fmt(&self.source.1, f)?;
+        f.write_str(" of ")?;
+        Display::fmt(&self.source.0.id(), f)?;
+        f.write_str(nl)?;
+        // target
+        f.write_str(indent)?;
+        f.write_str(if alt { "└─▶" } else { "─▶ " })?;
+        Display::fmt(&self.target.1, f)?;
+        f.write_str(" of ")?;
+        Display::fmt(&self.target.0.id(), f)?;
+        //
+        f.write_str(if alt { "" } else { " }" })
     }
 }
 
@@ -161,6 +192,21 @@ impl_!(From<WellFormedPath> for AppliedCompositeMorphism {
     }
 });
 
+impl<Id, M, Obj, Size, Cost> Display for AppliedCompositeMorphism<Id, M, Obj, Size, Cost>
+where
+    Id: Key + Display,
+    Obj: Object<Id>,
+    M: MorphismMeta + Display,
+    Size: Clone + Display,
+    Cost: Display,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        Display::fmt(&self.cost, f)?;
+        f.write_str(" => ")?;
+        Display::fmt(&self.morphisms, f)
+    }
+}
+
 impl_!(TryFrom<Path> for AppliedCompositeMorphism {
     type Error = InvalidPath;
 
@@ -193,7 +239,7 @@ impl_!(TryFrom<Path> for AppliedCompositeMorphism {
                 let Vertex::Morphism { inner, .. } = morphism.clone()
                     else { return Err(InvalidPath::InnerIsNotMorphism)};
                 Ok(AppliedMorphism {
-                    morphism: inner.clone(),
+                    morphism: inner,
                     source,
                     target,
                 })
