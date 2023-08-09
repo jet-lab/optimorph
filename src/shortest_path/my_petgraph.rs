@@ -27,44 +27,73 @@ pub fn shortest_single_path_with_bellman_ford<
     target: Id,
     input_size: Size, // used for all morphisms - accumulation is not supported
 ) -> Result<Option<WellFormedPath<Id, M, Obj, Size, Cost>>, PathFindingError<Id>> {
-    if source == target || category.get_object(&source).is_none() {
-        return Ok(None);
+    let mut general =
+        shortest_multi_path_with_bellman_ford(category, source, &[target], input_size)?;
+    if general.is_empty() {
+        Ok(None)
+    } else {
+        // function below should guarantee at most a single result since targets
+        // has length 1
+        Ok(Some(general.swap_remove(0)))
+    }
+}
+
+pub fn shortest_multi_path_with_bellman_ford<
+    const NON_NEGATIVE: bool,
+    Id: Key,
+    Obj: Object<Id>,
+    M: MorphismMeta + ApplyMorphism<Size, Cost, NON_NEGATIVE>,
+    Size: Clone,
+    Cost: FloatMeasure,
+>(
+    category: &Category<Id, M, Obj>,
+    source: Id,
+    targets: &[Id],
+    input_size: Size, // used for all morphisms - accumulation is not supported
+) -> Result<Vec<WellFormedPath<Id, M, Obj, Size, Cost>>, PathFindingError<Id>> {
+    if targets.is_empty() || category.get_object(&source).is_none() {
+        return Ok(vec![]);
     }
     let cg = CategoryGraph::new(category, input_size);
     let source_index = *cg
         .object_id_to_index
         .get(&source)
         .ok_or(MissingObject(source.clone()))?;
-    let target_index = *cg
-        .object_id_to_index
-        .get(&target)
-        .ok_or(MissingObject(target.clone()))?;
     let paths = bellman_ford(&cg.graph, source_index).map_err(|_| NegativeCycle)?;
-    let mut path = vec![];
-    let mut work_back = target_index;
-    while work_back != source_index {
-        path.push(work_back);
-        if paths.predecessors[work_back.index()].is_none() {
-            return Ok(None);
-        }
-        work_back = paths.predecessors[work_back.index()].unwrap();
-    }
-    path.push(work_back);
-    path.reverse();
 
-    Ok(Some(WellFormedPath(Path {
-        vertices: path
-            .into_iter()
-            .map(|idx| cg.index_to_vertex.get(&idx).cloned())
-            .collect::<Option<Vec<_>>>()
-            .unwrap() // todo
-            .into_iter()
-            .map(|v| Vertex::from(v, category))
-            .collect::<Vec<_>>()
-            .try_into()
-            .expect("returns none"),
-        cost: paths.distances[target_index.index()],
-    })))
+    let mut resolved_paths = vec![];
+    'outer: for target in targets {
+        let target_index = *cg
+            .object_id_to_index
+            .get(target)
+            .ok_or(MissingObject(target.clone()))?;
+        let mut work_back = target_index;
+        let mut path = vec![];
+        while work_back != source_index {
+            path.push(work_back);
+            if paths.predecessors[work_back.index()].is_none() {
+                continue 'outer;
+            }
+            work_back = paths.predecessors[work_back.index()].unwrap();
+        }
+        path.push(work_back);
+        path.reverse();
+        resolved_paths.push(WellFormedPath(Path {
+            vertices: path
+                .into_iter()
+                .map(|idx| cg.index_to_vertex.get(&idx).cloned())
+                .collect::<Option<Vec<_>>>()
+                .unwrap() // todo
+                .into_iter()
+                .map(|v| Vertex::from(v, category))
+                .collect::<Vec<_>>()
+                .try_into()
+                .expect("`continue 'outer` avoids this"),
+            cost: paths.distances[target_index.index()],
+        }));
+    }
+
+    Ok(resolved_paths)
 }
 
 #[derive(Error, Debug)]

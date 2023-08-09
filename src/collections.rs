@@ -73,8 +73,14 @@ impl<T> SomeVec<T> {
     pub fn iter_rest(&self) -> Iter<T> {
         self.rest.iter()
     }
+}
 
-    pub fn into_iter(self) -> Chain<array::IntoIter<T, 1>, vec::IntoIter<T>> {
+impl<T> IntoIterator for SomeVec<T> {
+    type Item = T;
+
+    type IntoIter = Chain<array::IntoIter<T, 1>, vec::IntoIter<T>>;
+
+    fn into_iter(self) -> Self::IntoIter {
         self.start.into_iter().chain(self.rest.into_iter())
     }
 }
@@ -83,7 +89,7 @@ impl<T> TryFrom<Vec<T>> for SomeVec<T> {
     type Error = ();
 
     fn try_from(mut value: Vec<T>) -> Result<Self, Self::Error> {
-        if value.len() == 0 {
+        if value.is_empty() {
             return Err(());
         }
         let first = value.remove(0);

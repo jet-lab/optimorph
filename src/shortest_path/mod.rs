@@ -85,4 +85,25 @@ where
     {
         my_petgraph::shortest_single_path_with_bellman_ford(category, source, target, input_size)
     }
+
+    fn shortest_paths<Id, Obj>(
+        category: &Category<Id, M, Obj>,
+        sources: Vec<(Id, Size)>,
+        targets: Vec<Id>,
+    ) -> Result<Vec<WellFormedPath<Id, M, Obj, Size, Cost>>, Self::Error<Id, Obj>>
+    where
+        Id: Key,
+        Obj: Object<Id>,
+    {
+        let mut results = vec![];
+        for (source, input) in sources {
+            results.extend(my_petgraph::shortest_multi_path_with_bellman_ford(
+                category,
+                source.clone(),
+                &targets,
+                input.clone(),
+            )?);
+        }
+        Ok(results)
+    }
 }
