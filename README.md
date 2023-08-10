@@ -16,7 +16,14 @@ You always specify some "input size" to the path optimizer. With option 1, it ac
 
 # Graph vs Category?
 
-This crate primarly uses the language of category theory instead of graph theory. But actually you will find that some internal data structures actually use the language of graph theory. This is because there are two layers of graphs.
+This crate primarly uses the language of category theory instead of graph theory, even though the data structures can be described as a graph. There are three reasons for this:
+- The morphisms are composable, which is a definitive feature of morphisms in category theory, but not edges in graph theory.
+- The category is actually a multigraph, where it is useful to think of distinct edges between two vertices as different types of transformations between those vertices, which is more consistent with the style of thinking in category than graph theory.
+- The category is actually implemented with an underlying graph data structure whose vertices are not one-to-one with the objects in the top layer. Different terminology helps distinguish the layers. See below for a more detailed explanation of the layers.
+
+## Layers
+
+Layer 1 is the bottom layer implementation graph, and layer 2 is the category exposed by this library:
 
 1. The petgraph and pathfinding crates define directed graphs composed of vertices, allowing you to connect any two vertices. Edges are anonymous and not represented in the type system. They are implied by defining a connection between two vertices. An edge can be thought of as an ordered pair of vertices. There can only be two edges between any two vertices - one for each direction.
 
