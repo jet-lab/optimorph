@@ -1,5 +1,7 @@
 use std::{fmt::Display, ops::Deref};
 
+use pathfinding::num_traits::Zero;
+use petgraph::algo::FloatMeasure;
 use thiserror::Error;
 
 use crate::{
@@ -132,6 +134,67 @@ where
         }
         output
     }
+}
+
+/// Reapplies the sequence of morphisms based on a new input size. This function
+/// accumulates, which means it uses the output size of each morphism as the
+/// input size of the next.
+/// 
+/// Use one of the sum functions to aggregate the cost into a single number.
+///
+/// The costs cannot be accumulated here because there are different traits that
+/// describe how to get a zero value depending on the optimization library. a
+/// single unified trait cannot be defined to cover both with auto-impls because
+/// there would be conflicting implementations. Specialization could solve this
+/// elegantly, but it's not stable. Alternatively you could use multiple wrapper
+/// or marker structs plus traits with associated types, but this is overly
+/// complicated. Simply summing outside the function is clearer in most cases.
+#[allow(clippy::type_complexity)]
+pub(crate) fn reapply<Id, M, Obj, Size, Cost, const NON_NEGATIVE: bool>(
+    vertices: impl IntoIterator<Item = Vertex<Id, M, Obj, Size>>,
+    mut input: Size,
+) -> (Vec<Vertex<Id, M, Obj, Size>>, Vec<Cost>)
+where
+    Size: Clone,
+    M: ApplyMorphism<Size, Cost, NON_NEGATIVE>,
+{
+    let mut new_path = vec![];
+    let mut cost_agg = vec![];
+    for vertex in vertices {
+        match vertex {
+            Vertex::Object { inner, .. } => new_path.push(Vertex::Object {
+                inner,
+                size: input.clone(),
+            }),
+            Vertex::Morphism { inner, .. } => {
+                let MorphismOutput { size, cost } = inner.metadata.apply(input.clone());
+                new_path.push(Vertex::Morphism {
+                    inner,
+                    input: input.clone(),
+                });
+                input = size;
+                cost_agg.push(cost);
+            }
+        }
+    }
+    (new_path, cost_agg)
+}
+
+#[allow(unused)]
+pub(crate) fn sum_zero<T: Zero>(ns: impl IntoIterator<Item = T>) -> T {
+    let mut agg = T::zero();
+    for n in ns {
+        agg = n + agg;
+    }
+    agg
+}
+
+pub(crate) fn sum_petgraph<T: FloatMeasure>(ns: impl IntoIterator<Item = T>) -> T {
+    let mut agg = T::zero();
+    for n in ns {
+        agg = n + agg;
+    }
+    agg
 }
 
 ////////////////////////////////////////

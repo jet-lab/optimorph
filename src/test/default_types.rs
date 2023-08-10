@@ -74,12 +74,12 @@ fn bellman_ford_petgraph() {
     let path = Negatable::shortest_path(&transitions().into(), 2, 0, 100.into())
         .unwrap()
         .unwrap();
-    let expected = expected([100, 100, 100]);
+    let expected = expected([100, 0, 0]);
     assert_eq!(expected.len(), path.vertices.len());
     for (expected_vertex, actual_vertex) in expected.into_iter().zip(path.vertices.iter()) {
         assert_eq!(&expected_vertex, actual_vertex);
     }
-    assert_eq!(Float::from(1111), path.cost);
+    assert_eq!(Float::from(1011), path.cost);
 }
 
 fn expected(sizes: [i32; 3]) -> Vec<Vertex<u8, MyMorphMeta>> {

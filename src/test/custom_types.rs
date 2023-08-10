@@ -121,7 +121,10 @@ fn dijkstra_pathfinding() {
     assert_eq!(path.cost, 250.into());
 }
 
-/// prefers the step2_dynamic because sizes are not accumulated and 70 < 100.
+/// prefers the step2_dynamic because sizes are not accumulated during
+/// optimization, and 70 < 100. the return value does include accumulation, so
+/// the cost accurately reflects the large value of the sub-optimal path that
+/// was selected.
 #[test]
 fn bellman_ford_petgraph() {
     let path =
@@ -129,5 +132,5 @@ fn bellman_ford_petgraph() {
             .unwrap()
             .unwrap();
 
-    assert_eq!(path.cost, 220.into());
+    assert_eq!(path.cost, 920.into());
 }

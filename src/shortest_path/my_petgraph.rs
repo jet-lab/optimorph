@@ -7,6 +7,7 @@ use petgraph::{
 };
 use thiserror::Error;
 
+use super::path::{reapply, sum_petgraph, Path, WellFormedPath};
 use crate::{
     category::{Category, Key, Object},
     morphism::ApplyMorphism,
@@ -75,7 +76,7 @@ pub fn shortest_multi_path_with_bellman_ford<
     if targets.is_empty() || category.get_object(&source).is_none() {
         return Ok(vec![]);
     }
-    let cg = CategoryGraph::new(category, input_size);
+    let cg = CategoryGraph::new(category, input_size.clone());
     let source_index = *cg
         .object_id_to_index
         .get(&source)
@@ -99,18 +100,19 @@ pub fn shortest_multi_path_with_bellman_ford<
         }
         path.push(work_back);
         path.reverse();
+        let unaccumulated_vertices = path
+            .into_iter()
+            .map(|idx| cg.index_to_vertex.get(&idx).cloned())
+            .collect::<Option<Vec<_>>>()
+            .unwrap() // todo
+            .into_iter()
+            .map(|v| Vertex::from(v, category))
+            .collect::<Vec<_>>();
+        // let cost = paths.distances[target_index.index()]; // incorrect: based on unaccumulated morphism outputs
+        let (vertices, costs) = reapply(unaccumulated_vertices, input_size.clone());
         resolved_paths.push(WellFormedPath(Path {
-            vertices: path
-                .into_iter()
-                .map(|idx| cg.index_to_vertex.get(&idx).cloned())
-                .collect::<Option<Vec<_>>>()
-                .unwrap() // todo
-                .into_iter()
-                .map(|v| Vertex::from(v, category))
-                .collect::<Vec<_>>()
-                .try_into()
-                .expect("`continue 'outer` avoids this"),
-            cost: paths.distances[target_index.index()],
+            vertices: vertices.try_into().expect("`continue 'outer` avoids this"),
+            cost: sum_petgraph(costs),
         }));
     }
 
@@ -125,8 +127,6 @@ pub enum PathFindingError<Id: std::fmt::Debug> {
     NegativeCycle,
 }
 use PathFindingError::*;
-
-use super::path::{Path, WellFormedPath};
 
 struct CategoryGraph<Id, M, Size, Cost, const NON_NEGATIVE: bool> {
     graph: Graph<LeanVertex<Id, M, Size>, Cost>,
