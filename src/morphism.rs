@@ -13,11 +13,7 @@ pub trait MorphismMeta: Hash + Eq + Clone {}
 impl<M> MorphismMeta for M where M: Hash + Eq + Clone {}
 
 #[derive(Debug)]
-pub struct Morphism<Id, M>
-where
-    Id: Key,
-    M: MorphismMeta,
-{
+pub struct Morphism<Id, M> {
     pub source: Id,
     pub target: Id,
     /// This should contain:
@@ -54,11 +50,7 @@ where
     }
 }
 
-impl<Id, M> Clone for Morphism<Id, M>
-where
-    Id: Key,
-    M: MorphismMeta,
-{
+impl<Id: Clone, M: Clone> Clone for Morphism<Id, M> {
     fn clone(&self) -> Self {
         Self {
             source: self.source.clone(),
@@ -70,7 +62,6 @@ where
 
 impl<Id, M, IntoId1, IntoId2, IntoM> From<(IntoId1, IntoId2, IntoM)> for Morphism<Id, M>
 where
-    Id: Key,
     M: MorphismMeta,
     IntoId1: Into<Id>,
     IntoId2: Into<Id>,
@@ -125,11 +116,7 @@ where
 }
 
 /// Needed for `pathfinding`
-impl<Id, M> PartialEq for Morphism<Id, M>
-where
-    Id: Key,
-    M: MorphismMeta,
-{
+impl<Id: PartialEq, M: PartialEq> PartialEq for Morphism<Id, M> {
     fn eq(&self, other: &Self) -> bool {
         self.metadata == other.metadata
             && self.target == other.target
@@ -138,19 +125,10 @@ where
 }
 
 /// Needed for `pathfinding`
-impl<Id, M> Eq for Morphism<Id, M>
-where
-    Id: Key,
-    M: MorphismMeta,
-{
-}
+impl<Id: Eq, M: Eq> Eq for Morphism<Id, M> {}
 
 /// Needed for `pathfinding`
-impl<Id, M> std::hash::Hash for Morphism<Id, M>
-where
-    Id: Key,
-    M: MorphismMeta,
-{
+impl<Id: Hash, M: Hash> std::hash::Hash for Morphism<Id, M> {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.source.hash(state);
         self.target.hash(state);
@@ -192,10 +170,7 @@ impl<Size, Cost: Zero> MorphismOutput<Size, Cost> {
     }
 }
 
-pub struct CompositeMorphism<Id, M>(pub SomeVec<Morphism<Id, M>>)
-where
-    Id: Key,
-    M: MorphismMeta;
+pub struct CompositeMorphism<Id, M>(pub SomeVec<Morphism<Id, M>>);
 
 impl<Id, M, Size, Cost, const NON_NEGATIVE: bool> ApplyMorphism<Size, Cost, NON_NEGATIVE>
     for CompositeMorphism<Id, M>

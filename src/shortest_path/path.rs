@@ -14,64 +14,46 @@ use crate::{
 // Path types
 //
 
-structs!(// <Id, M, Obj = Id, Size = Float, Cost = Float>
-    /// The basic type produced by the path optimization algorithms.
-    Path {
-        pub vertices: SomeVec<Vertex<Id, M, Obj, Size>>,
-        pub cost: Cost,
-    }
+/// The basic type produced by the path optimization algorithms.
+#[derive(Clone, Debug)]
+pub struct Path<Id, M, Obj = Id, Size = Float, Cost = Float> {
+    pub vertices: SomeVec<Vertex<Id, M, Obj, Size>>,
+    pub cost: Cost,
+}
 
-    /// Privately wraps SimplePath as a promise that the contained data is
-    /// structured in a way to ensure it can be converted without issue into
-    /// ClosedPath or CompositeMorphism, even though the Path type does not
-    /// enforce that structure.
-    ///
-    /// The path is guaranteed to be in object/morphism alternating form,
-    /// starting and ending with objects. It has at least three vertices in the
-    /// form O-M-O, but may have more, such as O-M-O-M-O-M-O-M-O...
-    ///
-    /// It is critical that the inner field remains private to the shortest_path
-    /// module. Any mutation or instantiation of this type must be tightly
-    /// restricted to ensure its integrity.
-    WellFormedPath(pub(super) Path<Id, M, Obj, Size, Cost>);
-
-    /// Alternate representation of a WellFormedPath with more structure:
-    /// Organized as a list of each morphism from the path combined with its two
-    /// adjacent objects.
-    AppliedCompositeMorphism {
-        pub morphisms: SomeVec<AppliedMorphism<Id, M, Obj, Size>>,
-        pub cost: Cost,
-    }
+/// Privately wraps SimplePath as a promise that the contained data is
+/// structured in a way to ensure it can be converted without issue into
+/// ClosedPath or CompositeMorphism, even though the Path type does not
+/// enforce that structure.
+///
+/// The path is guaranteed to be in object/morphism alternating form,
+/// starting and ending with objects. It has at least three vertices in the
+/// form O-M-O, but may have more, such as O-M-O-M-O-M-O-M-O...
+///
+/// It is critical that the inner field remains private to the shortest_path
+/// module. Any mutation or instantiation of this type must be tightly
+/// restricted to ensure its integrity.
+#[derive(Clone, Debug)]
+pub struct WellFormedPath<Id, M, Obj = Id, Size = Float, Cost = Float>(
+    pub(super) Path<Id, M, Obj, Size, Cost>,
 );
+
+/// Alternate representation of a WellFormedPath with more structure:
+/// Organized as a list of each morphism from the path combined with its two
+/// adjacent objects.
+#[derive(Clone, Debug)]
+pub struct AppliedCompositeMorphism<Id, M, Obj = Id, Size = Float, Cost = Float> {
+    pub morphisms: SomeVec<AppliedMorphism<Id, M, Obj, Size>>,
+    pub cost: Cost,
+}
 
 /// A heavyweight version of Morphism that includes the full input and output
 /// objects plus their sizes since this is applied in a path.
-#[derive(Clone)]
-pub struct AppliedMorphism<Id, M, Obj = Id, Size = Float>
-where
-    Id: Key,
-    Obj: Object<Id>,
-    M: MorphismMeta,
-{
+#[derive(Clone, Debug)]
+pub struct AppliedMorphism<Id, M, Obj = Id, Size = Float> {
     pub morphism: Morphism<Id, M>,
     pub source: (Obj, Size),
     pub target: (Obj, Size),
-}
-
-impl<Id, M, Obj, Size> std::fmt::Debug for AppliedMorphism<Id, M, Obj, Size>
-where
-    Id: Key + std::fmt::Debug,
-    Obj: Object<Id> + std::fmt::Debug,
-    M: MorphismMeta + std::fmt::Debug,
-    Size: std::fmt::Debug,
-{
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("AppliedMorphism")
-            .field("morphism", &self.morphism.metadata)
-            .field("source", &self.source)
-            .field("target", &self.target)
-            .finish()
-    }
 }
 
 impl<Id, M, Obj, Size> Display for AppliedMorphism<Id, M, Obj, Size>
@@ -317,48 +299,6 @@ pub enum InvalidPath {
 //////////////////////////////////////
 // Helpers
 //
-
-/// Shorthand to produce all the generics and trait bounds that are needed for
-/// path type definitions.
-///
-/// Justification:
-/// - The trait bounds are ridiculously verbose and hard to read. It's difficult
-///   to visually scan the file and understand what's going on when the majority
-///   of the code is the definition of generics types.
-/// - Each implementation in this file requires identical bounds. It's a pain to
-///   keep them all in sync as they need to change, unless they are kept in a
-///   single place.
-macro_rules! structs {
-    (
-        $(
-            $(#[$outer:meta])*
-            $PathType:ident$(<$a:lifetime>)? $(( $($tuple_fields:tt)* );)?
-                $({ $($named_fields:tt)* })?
-        )+
-    ) => {
-        $(
-            $(#[$outer])*
-            #[derive(Clone, Debug)]
-            pub struct $PathType<$($a,)? Id, M, Obj = Id, Size = Float, Cost = Float>
-            $(
-                ($($tuple_fields)*) where
-                    Id: Key,
-                    Obj: Object<Id>,
-                    M: MorphismMeta,
-                    Size: Clone;
-            )?
-            $(
-                where
-                    Id: Key,
-                    Obj: Object<Id>,
-                    M: MorphismMeta,
-                    Size: Clone,
-                { $($named_fields)* }
-            )?
-        )+
-    };
-}
-use structs;
 
 /// Shorthand to implement path structs. See `structs!` doc for explanation.
 ///

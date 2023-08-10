@@ -28,12 +28,7 @@ pub trait Key: Eq + Hash + Debug + Clone {}
 impl<K: Eq + Hash + Debug + Clone> Key for K {}
 
 #[derive(Debug)]
-pub struct Category<Id = String, M = SimpleMorphism, Obj = Id>
-where
-    Id: Key,
-    Obj: Object<Id>,
-    M: MorphismMeta,
-{
+pub struct Category<Id = String, M = SimpleMorphism, Obj = Id> {
     objects: HashMap<Id, Obj>,
     morphisms: HashSet<Morphism<Id, M>>,
     outbound: HashMap<Id, Vec<Morphism<Id, M>>>,

@@ -16,24 +16,19 @@ use crate::{
 
 /// Comprehensive return type that includes the full object
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub enum Vertex<Id, M, Obj = Id, Size = Float>
-where
-    Obj: Object<Id>,
-    Id: Key,
-    M: MorphismMeta,
-{
+pub enum Vertex<Id, M, Obj = Id, Size = Float> {
     Object { inner: Obj, size: Size },
     Morphism { inner: Morphism<Id, M>, input: Size },
 }
 
-impl<Obj, Id, M, Size> Vertex<Id, M, Obj, Size>
-where
-    Obj: Object<Id>,
-    Id: Key,
-    M: MorphismMeta,
-    Size: Clone,
-{
-    pub(crate) fn from(lean: LeanVertex<Id, M, Size>, category: &Category<Id, M, Obj>) -> Self {
+impl<Obj, Id, M, Size> Vertex<Id, M, Obj, Size> {
+    pub(crate) fn from(lean: LeanVertex<Id, M, Size>, category: &Category<Id, M, Obj>) -> Self
+    where
+        Obj: Object<Id>,
+        Id: Key,
+        M: MorphismMeta,
+        Size: Clone,
+    {
         match lean {
             LeanVertex::Object { id, size } => Self::Object {
                 inner: category.get_object(&id).unwrap().clone(), //todo unwrap
@@ -47,12 +42,7 @@ where
 /// Used as a vertex in the underlying graph optimization algorithms. Only
 /// refers to an object by its id, to keep things simple and lightweight.
 #[derive(Debug, PartialEq, Eq, Hash)]
-pub(crate) enum LeanVertex<Id, M, Size>
-where
-    Id: Key,
-    M: MorphismMeta,
-    Size: Clone,
-{
+pub(crate) enum LeanVertex<Id, M, Size> {
     Object { id: Id, size: Size },
     Morphism { inner: Morphism<Id, M>, input: Size },
 }
