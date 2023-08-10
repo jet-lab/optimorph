@@ -16,6 +16,7 @@ where
     type Error<Id: Key, Obj>;
 
     /// Returns the cheapest path from source to target
+    #[allow(clippy::type_complexity)]
     fn shortest_path<Id, Obj>(
         category: &Category<Id, M, Obj>,
         source: Id,
@@ -27,6 +28,7 @@ where
         Obj: Object<Id>;
 
     /// Returns the cheapest path from each source to each target
+    #[allow(clippy::type_complexity)]
     fn shortest_paths<Id, Obj>(
         category: &Category<Id, M, Obj>,
         sources: Vec<(Id, Size)>,

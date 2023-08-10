@@ -1,12 +1,12 @@
 use std::fmt::Debug;
-use std::hash::{Hash, Hasher};
+use std::hash::Hash;
 
 use crate::morphism::{ApplyMorphism, MorphismMeta, MorphismOutput};
 
 use super::Float;
 
 /// This can be used as the metadata field in Morphism.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Hash, Eq, PartialEq)]
 pub struct SimpleMorphism<Meta = String, Logic = ConstantCost>
 where
     Meta: MorphismMeta,
@@ -15,18 +15,6 @@ where
     /// other morphisms that have the same source and target.
     pub meta: Meta,
     pub logic: Logic,
-}
-
-impl<Meta: MorphismMeta, Logic> PartialEq for SimpleMorphism<Meta, Logic> {
-    fn eq(&self, other: &Self) -> bool {
-        self.meta == other.meta
-    }
-}
-impl<Meta: MorphismMeta, Logic> Eq for SimpleMorphism<Meta, Logic> {}
-impl<Meta: MorphismMeta, Logic> Hash for SimpleMorphism<Meta, Logic> {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.meta.hash(state);
-    }
 }
 
 impl<Meta: MorphismMeta> SimpleMorphism<Meta> {

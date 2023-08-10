@@ -27,26 +27,11 @@ impl<Id: Clone> HasId<Id> for Id {
 pub trait Key: Eq + Hash + Debug + Clone {}
 impl<K: Eq + Hash + Debug + Clone> Key for K {}
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Category<Id = String, M = SimpleMorphism, Obj = Id> {
     objects: HashMap<Id, Obj>,
     morphisms: HashSet<Morphism<Id, M>>,
     outbound: HashMap<Id, Vec<Morphism<Id, M>>>,
-}
-
-impl<Id, M, Obj> Clone for Category<Id, M, Obj>
-where
-    Id: Key,
-    Obj: Object<Id>,
-    M: MorphismMeta,
-{
-    fn clone(&self) -> Self {
-        Self {
-            objects: self.objects.clone(),
-            morphisms: self.morphisms.clone(),
-            outbound: self.outbound.clone(),
-        }
-    }
 }
 
 impl<Id, M> From<Vec<Morphism<Id, M>>> for Category<Id, M, Id>
@@ -91,6 +76,7 @@ impl<Id, M, Obj> Category<Id, M, Obj> {
         self.morphisms.iter()
     }
 
+    #[allow(clippy::type_complexity)]
     pub fn destruct(
         self,
     ) -> (

@@ -39,7 +39,7 @@ impl<Obj, Id, M, Size> Vertex<Id, M, Obj, Size> {
 
 /// Used as a vertex in the underlying graph optimization algorithms. Only
 /// refers to an object by its id, to keep things simple and lightweight.
-#[derive(Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub(crate) enum LeanVertex<Id, M, Size> {
     Object { id: Id, size: Size },
     Morphism { inner: Morphism<Id, M>, input: Size },
@@ -48,26 +48,6 @@ pub(crate) enum LeanVertex<Id, M, Size> {
 impl<Id, M, Size> Default for LeanVertex<Id, M, Size> {
     fn default() -> Self {
         unimplemented!("do not use this. it makes no sense. this is only implemented to satisfy annoying trait bounds that are not actually used");
-    }
-}
-
-impl<Id, M, Size> Clone for LeanVertex<Id, M, Size>
-where
-    Id: Clone,
-    M: Clone,
-    Size: Clone,
-{
-    fn clone(&self) -> Self {
-        match self {
-            Self::Object { id, size } => Self::Object {
-                id: id.clone(),
-                size: size.clone(),
-            },
-            Self::Morphism { inner, input } => Self::Morphism {
-                inner: inner.clone(),
-                input: input.clone(),
-            },
-        }
     }
 }
 

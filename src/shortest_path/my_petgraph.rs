@@ -23,6 +23,7 @@ use crate::{
 /// is found, it will be re-applied with accumulation. This means that there may
 /// be some error in terms of which path has been selected, but there will be no
 /// error in the values contained within the returned path.
+#[allow(clippy::type_complexity)]
 pub fn shortest_single_path_with_bellman_ford<
     const NON_NEGATIVE: bool,
     Id: Key,
@@ -57,6 +58,7 @@ pub fn shortest_single_path_with_bellman_ford<
 /// are found, they will be re-applied with accumulation. This means that there
 /// may be some error in terms of which paths have been selected, but there will
 /// be no error in the values contained within the returned paths.
+#[allow(clippy::type_complexity)]
 pub fn shortest_multi_path_with_bellman_ford<
     const NON_NEGATIVE: bool,
     Id: Key,

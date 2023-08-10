@@ -12,7 +12,7 @@ use crate::{
 pub trait MorphismMeta: Hash + Eq + Clone {}
 impl<M> MorphismMeta for M where M: Hash + Eq + Clone {}
 
-#[derive(Debug)]
+#[derive(Clone, Debug, Hash, PartialEq, Eq)]
 pub struct Morphism<Id, M> {
     pub source: Id,
     pub target: Id,
@@ -43,16 +43,6 @@ impl<Id: Display, M: Display> Display for Morphism<Id, M> {
         Display::fmt(&self.target, f)?;
         //
         f.write_str(if alt { "" } else { " }" })
-    }
-}
-
-impl<Id: Clone, M: Clone> Clone for Morphism<Id, M> {
-    fn clone(&self) -> Self {
-        Self {
-            source: self.source.clone(),
-            target: self.target.clone(),
-            metadata: self.metadata.clone(),
-        }
     }
 }
 
@@ -105,27 +95,6 @@ impl<Id, M> Morphism<Id, M> {
             },
             output.cost,
         )]
-    }
-}
-
-/// Needed for `pathfinding`
-impl<Id: PartialEq, M: PartialEq> PartialEq for Morphism<Id, M> {
-    fn eq(&self, other: &Self) -> bool {
-        self.metadata == other.metadata
-            && self.target == other.target
-            && self.source == other.source
-    }
-}
-
-/// Needed for `pathfinding`
-impl<Id: Eq, M: Eq> Eq for Morphism<Id, M> {}
-
-/// Needed for `pathfinding`
-impl<Id: Hash, M: Hash> std::hash::Hash for Morphism<Id, M> {
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        self.source.hash(state);
-        self.target.hash(state);
-        self.metadata.hash(state);
     }
 }
 
