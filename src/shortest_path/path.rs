@@ -3,10 +3,10 @@ use std::{fmt::Display, ops::Deref};
 use thiserror::Error;
 
 use crate::{
-    category::{Key, Object},
+    category::HasId,
     collections::{Replace, SomeVec},
     impls::Float,
-    morphism::{ApplyMorphism, Morphism, MorphismMeta, MorphismOutput},
+    morphism::{ApplyMorphism, Morphism, MorphismOutput},
     vertex::Vertex,
 };
 
@@ -58,9 +58,9 @@ pub struct AppliedMorphism<Id, M, Obj = Id, Size = Float> {
 
 impl<Id, M, Obj, Size> Display for AppliedMorphism<Id, M, Obj, Size>
 where
-    Id: Key + Display,
-    Obj: Object<Id>,
-    M: MorphismMeta + Display,
+    Id: Display,
+    Obj: HasId<Id>,
+    M: Display,
     Size: Display,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -89,9 +89,6 @@ where
 
 impl<Id, M, Obj, Size, Cost> AppliedCompositeMorphism<Id, M, Obj, Size, Cost>
 where
-    Id: Key,
-    Obj: Object<Id>,
-    M: MorphismMeta,
     Size: Clone,
 {
     pub fn reapply<const NON_NEGATIVE: bool>(self, new_input: Size) -> Self
@@ -126,10 +123,7 @@ where
 impl<Id, M, Obj, Size, Cost, const NON_NEGATIVE: bool> ApplyMorphism<Size, Cost, NON_NEGATIVE>
     for AppliedCompositeMorphism<Id, M, Obj, Size, Cost>
 where
-    Id: Key,
-    Obj: Object<Id>,
-    M: MorphismMeta + ApplyMorphism<Size, Cost, NON_NEGATIVE>,
-    Size: Clone,
+    M: ApplyMorphism<Size, Cost, NON_NEGATIVE>,
 {
     fn apply(&self, input: Size) -> MorphismOutput<Size, Cost> {
         let mut output = self.morphisms.first().morphism.metadata.apply(input);
@@ -146,40 +140,49 @@ where
 
 // Do not implement DerefMut. That would defeat the entire purpose of
 // WellFormedPath. Use Into<Path> to make changes.
-impl_! { Deref for WellFormedPath {
+impl<Id, M, Obj, Size, Cost> Deref for WellFormedPath<Id, M, Obj, Size, Cost> {
     type Target = Path<Id, M, Obj, Size, Cost>;
     fn deref(&self) -> &Self::Target {
         &self.0
     }
-}}
+}
 
-impl_!(WellFormedPath {
+impl<Id, M, Obj, Size, Cost> WellFormedPath<Id, M, Obj, Size, Cost> {
     pub fn into_inner(self) -> Path<Id, M, Obj, Size, Cost> {
         self.0
     }
-});
+}
 
-impl_!(From<WellFormedPath> for Path {
+impl<Id, M, Obj, Size, Cost> From<WellFormedPath<Id, M, Obj, Size, Cost>>
+    for Path<Id, M, Obj, Size, Cost>
+{
     fn from(value: WellFormedPath<Id, M, Obj, Size, Cost>) -> Self {
         value.0
     }
-});
+}
 
-impl_!(From<WellFormedPath> for AppliedCompositeMorphism {
+impl<Id, M, Obj, Size, Cost> From<WellFormedPath<Id, M, Obj, Size, Cost>>
+    for AppliedCompositeMorphism<Id, M, Obj, Size, Cost>
+where
+    Id: Clone,
+    Obj: Clone,
+    M: Clone,
+    Size: Clone,
+{
     fn from(value: WellFormedPath<Id, M, Obj, Size, Cost>) -> Self {
         value
             .0
             .try_into()
             .expect("path was assumed to be well formed due to its wrapper type")
     }
-});
+}
 
 impl<Id, M, Obj, Size, Cost> Display for AppliedCompositeMorphism<Id, M, Obj, Size, Cost>
 where
-    Id: Key + Display,
-    Obj: Object<Id>,
-    M: MorphismMeta + Display,
-    Size: Clone + Display,
+    Id: Display,
+    Obj: HasId<Id>,
+    M: Display,
+    Size: Display,
     Cost: Display,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -189,7 +192,14 @@ where
     }
 }
 
-impl_!(TryFrom<Path> for AppliedCompositeMorphism {
+impl<Id, M, Obj, Size, Cost> TryFrom<Path<Id, M, Obj, Size, Cost>>
+    for AppliedCompositeMorphism<Id, M, Obj, Size, Cost>
+where
+    Id: Clone,
+    Obj: Clone,
+    M: Clone,
+    Size: Clone,
+{
     type Error = InvalidPath;
 
     fn try_from(value: Path<Id, M, Obj, Size, Cost>) -> Result<Self, Self::Error> {
@@ -233,50 +243,56 @@ impl_!(TryFrom<Path> for AppliedCompositeMorphism {
             cost: value.cost,
         })
     }
-});
+}
 
-impl_!(Replace<Cost> for AppliedCompositeMorphism {
+impl<Id, M, Obj, Size, Cost> Replace<Cost> for AppliedCompositeMorphism<Id, M, Obj, Size, Cost> {
     type With<U> = AppliedCompositeMorphism<Id, M, Obj, Size, U>;
+
     fn read(&self) -> &Cost {
         &self.cost
     }
+
     fn replace<R>(self, item: R) -> (Self::With<R>, Cost) {
         (
             AppliedCompositeMorphism {
                 morphisms: self.morphisms,
                 cost: item,
             },
-            self.cost
+            self.cost,
         )
     }
-});
+}
 
-impl_!(Replace<Cost> for Path {
+impl<Id, M, Obj, Size, Cost> Replace<Cost> for Path<Id, M, Obj, Size, Cost> {
     type With<U> = Path<Id, M, Obj, Size, U>;
+
     fn read(&self) -> &Cost {
         &self.cost
     }
+
     fn replace<R>(self, item: R) -> (Self::With<R>, Cost) {
         (
             Path {
                 vertices: self.vertices,
                 cost: item,
             },
-            self.cost
+            self.cost,
         )
     }
-});
+}
 
-impl_!(Replace<Cost> for WellFormedPath {
+impl<Id, M, Obj, Size, Cost> Replace<Cost> for WellFormedPath<Id, M, Obj, Size, Cost> {
     type With<U> = WellFormedPath<Id, M, Obj, Size, U>;
+
     fn read(&self) -> &Cost {
-        &self.cost
+        &self.0.cost
     }
+
     fn replace<R>(self, item: R) -> (Self::With<R>, Cost) {
         let (one, two) = self.0.replace(item);
         (WellFormedPath(one), two)
     }
-});
+}
 
 //////////////////////////////////////
 // Errors
@@ -295,40 +311,3 @@ pub enum InvalidPath {
     #[error("")]
     MalformedStructure,
 }
-
-//////////////////////////////////////
-// Helpers
-//
-
-/// Shorthand to implement path structs. See `structs!` doc for explanation.
-///
-/// A separate macro invocation is needed for each impl to keep nesting to a
-/// minimum
-///
-/// You can copy and paste the body of this macro to develop the implementation,
-/// then swap it out with a macro invocation when it's relatively stable to make
-/// it more readable and maintainable.
-macro_rules! impl_ {
-    ($PathType:ident { $($args:tt)* } $(<$_generic:ident>)? $([$_trait:ty])?) => {
-        impl<$($_generic,)? Id, M, Obj, Size, Cost> $($_trait for)? $PathType<Id, M, Obj, Size, Cost>
-            where
-                Id: Key,
-                Obj: Object<Id>,
-                M: MorphismMeta,
-                Size: Clone
-                { $($args)* }
-    };
-    ($Trait:ident for $PathType:ident { $($args:tt)* }) => {
-        impl_!($PathType { $($args)* } [$Trait]);
-    };
-    (From<$Src:ident> for $PathType:ident { $($args:tt)* }) => {
-        impl_!($PathType { $($args)* } [From<$Src<Id, M, Obj, Size, Cost>>]);
-    };
-    (TryFrom<$Src:ident> for $PathType:ident { $($args:tt)* }) => {
-        impl_!($PathType { $($args)* } [TryFrom<$Src<Id, M, Obj, Size, Cost>>]);
-    };
-    ($(<$($G:ident)+>)? $Trait:ident<$Inner:ident> for $PathType:ident { $($args:tt)* }) => {
-        impl_!($PathType { $($args)* } $(<$($G)+>)? [$Trait<$Inner>]);
-    };
-}
-use impl_;

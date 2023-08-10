@@ -3,7 +3,7 @@ use std::{fmt::Display, hash::Hash};
 use pathfinding::num_traits::Zero;
 
 use crate::{
-    category::{Category, Key, Object},
+    category::{Category, HasId, Key},
     collections::SomeVec,
     impls::Float,
     vertex::LeanVertex,
@@ -25,11 +25,7 @@ pub struct Morphism<Id, M> {
     pub metadata: M,
 }
 
-impl<Id, M> Display for Morphism<Id, M>
-where
-    Id: Key + Display,
-    M: MorphismMeta + Display,
-{
+impl<Id: Display, M: Display> Display for Morphism<Id, M> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let alt = f.alternate();
         let nl = if alt { "\n" } else { " " };
@@ -62,7 +58,6 @@ impl<Id: Clone, M: Clone> Clone for Morphism<Id, M> {
 
 impl<Id, M, IntoId1, IntoId2, IntoM> From<(IntoId1, IntoId2, IntoM)> for Morphism<Id, M>
 where
-    M: MorphismMeta,
     IntoId1: Into<Id>,
     IntoId2: Into<Id>,
     IntoM: Into<M>,
@@ -76,11 +71,7 @@ where
     }
 }
 
-impl<Id, M> Morphism<Id, M>
-where
-    Id: Key,
-    M: MorphismMeta,
-{
+impl<Id, M> Morphism<Id, M> {
     pub fn new(source: Id, target: Id, metadata: impl Into<M>) -> Self {
         Self {
             source,
@@ -90,13 +81,15 @@ where
     }
 
     /// Needed for `pathfinding`
-    pub(crate) fn successors<const NON_NEGATIVE: bool, Obj: Object<Id>, Size: Clone, Cost>(
+    pub(crate) fn successors<const NON_NEGATIVE: bool, Obj, Size: Clone, Cost>(
         &self,
         category: &Category<Id, M, Obj>,
         input_size: Size,
     ) -> Vec<(LeanVertex<Id, M, Size>, Cost)>
     where
         M: ApplyMorphism<Size, Cost, NON_NEGATIVE>,
+        Id: Key,
+        Obj: HasId<Id>,
     {
         // todo find a way to get a compile-time guarantee that unwrap cannot fail
         // todo should apply have access to these states?
@@ -175,9 +168,7 @@ pub struct CompositeMorphism<Id, M>(pub SomeVec<Morphism<Id, M>>);
 impl<Id, M, Size, Cost, const NON_NEGATIVE: bool> ApplyMorphism<Size, Cost, NON_NEGATIVE>
     for CompositeMorphism<Id, M>
 where
-    Id: Key,
-    M: MorphismMeta + ApplyMorphism<Size, Cost, NON_NEGATIVE>,
-    Size: Clone,
+    M: ApplyMorphism<Size, Cost, NON_NEGATIVE>,
 {
     fn apply(&self, input: Size) -> MorphismOutput<Size, Cost> {
         let mut output = self.0.first().metadata.apply(input);

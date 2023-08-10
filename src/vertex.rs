@@ -8,10 +8,10 @@ use std::hash::Hash;
 use pathfinding::num_traits::Zero;
 
 use crate::{
-    category::{Category, Key, Object},
+    category::{Category, HasId, Key, Object},
     impls::Float,
     morphism::ApplyMorphism,
-    morphism::{Morphism, MorphismMeta},
+    morphism::Morphism,
 };
 
 /// Comprehensive return type that includes the full object
@@ -26,8 +26,6 @@ impl<Obj, Id, M, Size> Vertex<Id, M, Obj, Size> {
     where
         Obj: Object<Id>,
         Id: Key,
-        M: MorphismMeta,
-        Size: Clone,
     {
         match lean {
             LeanVertex::Object { id, size } => Self::Object {
@@ -47,12 +45,7 @@ pub(crate) enum LeanVertex<Id, M, Size> {
     Morphism { inner: Morphism<Id, M>, input: Size },
 }
 
-impl<Id, M, Size> Default for LeanVertex<Id, M, Size>
-where
-    Id: Key,
-    M: MorphismMeta,
-    Size: Clone,
-{
+impl<Id, M, Size> Default for LeanVertex<Id, M, Size> {
     fn default() -> Self {
         unimplemented!("do not use this. it makes no sense. this is only implemented to satisfy annoying trait bounds that are not actually used");
     }
@@ -60,8 +53,8 @@ where
 
 impl<Id, M, Size> Clone for LeanVertex<Id, M, Size>
 where
-    Id: Key,
-    M: MorphismMeta,
+    Id: Clone,
+    M: Clone,
     Size: Clone,
 {
     fn clone(&self) -> Self {
@@ -78,18 +71,17 @@ where
     }
 }
 
-impl<Id, M, Size> LeanVertex<Id, M, Size>
-where
-    Id: Key,
-    M: MorphismMeta,
-    Size: Clone,
-{
-    pub fn successors<const NON_NEGATIVE: bool, Obj: Object<Id>, Cost: Zero>(
+impl<Id, M, Size> LeanVertex<Id, M, Size> {
+    pub fn successors<const NON_NEGATIVE: bool, Obj, Cost: Zero>(
         &self,
         category: &Category<Id, M, Obj>,
     ) -> Vec<(LeanVertex<Id, M, Size>, Cost)>
     where
+        Id: Key,
+        Obj: HasId<Id>,
         M: ApplyMorphism<Size, Cost, NON_NEGATIVE>,
+        M: Clone,
+        Size: Clone,
     {
         match self {
             LeanVertex::Object { id, size } => category
@@ -113,9 +105,12 @@ where
         }
     }
 
-    pub fn is_object_with_id(&self, id: &Id) -> bool {
+    pub fn is_object_with_id(&self, id: &Id) -> bool
+    where
+        Id: Eq,
+    {
         match self {
-            LeanVertex::Object { id: inner, .. } => &inner.clone() == id,
+            LeanVertex::Object { id: inner, .. } => inner == id,
             LeanVertex::Morphism { .. } => false,
         }
     }

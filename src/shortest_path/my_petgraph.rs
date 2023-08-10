@@ -126,13 +126,7 @@ use PathFindingError::*;
 
 use super::path::{Path, WellFormedPath};
 
-struct CategoryGraph<Id, M, Size, Cost, const NON_NEGATIVE: bool>
-where
-    Id: Key,
-    M: MorphismMeta + ApplyMorphism<Size, Cost, NON_NEGATIVE>,
-    Size: Clone,
-    Cost: FloatMeasure,
-{
+struct CategoryGraph<Id, M, Size, Cost, const NON_NEGATIVE: bool> {
     graph: Graph<LeanVertex<Id, M, Size>, Cost>,
     object_id_to_index: HashMap<Id, NodeIndex>,
     index_to_vertex: HashMap<NodeIndex, LeanVertex<Id, M, Size>>,
