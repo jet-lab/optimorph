@@ -28,22 +28,29 @@ impl<Obj, Id, M, Size> Vertex<Id, M, Obj, Size> {
         Id: Key,
     {
         match lean {
-            LeanVertex::Object { id, size } => Self::Object {
+            LeanVertex::Object { inner: id, size } => Self::Object {
                 inner: category.get_object(&id).unwrap().clone(), //todo unwrap
                 size,
             },
             LeanVertex::Morphism { inner, input } => Self::Morphism { inner, input },
         }
     }
+
+    pub fn is_object_with_id(&self, id: &Id) -> bool
+    where
+        Id: Eq,
+        Obj: HasId<Id>,
+    {
+        match self {
+            Vertex::Object { inner, .. } => &inner.id() == id,
+            Vertex::Morphism { .. } => false,
+        }
+    }
 }
 
 /// Used as a vertex in the underlying graph optimization algorithms. Only
 /// refers to an object by its id, to keep things simple and lightweight.
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub(crate) enum LeanVertex<Id, M, Size> {
-    Object { id: Id, size: Size },
-    Morphism { inner: Morphism<Id, M>, input: Size },
-}
+pub(crate) type LeanVertex<Id, M, Size> = Vertex<Id, M, Id, Size>;
 
 impl<Id, M, Size> Default for LeanVertex<Id, M, Size> {
     fn default() -> Self {
@@ -64,7 +71,7 @@ impl<Id, M, Size> LeanVertex<Id, M, Size> {
         Size: Clone,
     {
         match self {
-            LeanVertex::Object { id, size } => category
+            LeanVertex::Object { inner: id, size } => category
                 .get_outbound(id)
                 .expect("The object id was not found in the category") //todo
                 .iter()
@@ -82,16 +89,6 @@ impl<Id, M, Size> LeanVertex<Id, M, Size> {
                 inner,
                 input: input_size,
             } => inner.successors(category, input_size.clone()),
-        }
-    }
-
-    pub fn is_object_with_id(&self, id: &Id) -> bool
-    where
-        Id: Eq,
-    {
-        match self {
-            LeanVertex::Object { id: inner, .. } => inner == id,
-            LeanVertex::Morphism { .. } => false,
         }
     }
 }

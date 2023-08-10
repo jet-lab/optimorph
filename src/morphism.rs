@@ -90,7 +90,7 @@ impl<Id, M> Morphism<Id, M> {
         // next_object.size = output.size;
         vec![(
             LeanVertex::Object {
-                id: self.target.clone(),
+                inner: self.target.clone(),
                 size: output.size,
             },
             output.cost,

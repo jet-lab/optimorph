@@ -29,7 +29,7 @@ pub fn shortest_single_path_with_dijkstra<
         return None;
     }
     let start_vertex = LeanVertex::Object {
-        id: source,
+        inner: source,
         size: input_size,
     };
     dijkstra(

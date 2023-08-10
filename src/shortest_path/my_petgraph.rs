@@ -152,14 +152,14 @@ where
         let mut index_to_vertex = HashMap::new();
         for object in objects.into_values() {
             let index = graph.add_node(LeanVertex::Object {
-                id: object.id(),
+                inner: object.id(),
                 size: input_size.clone(),
             });
             object_id_to_index.insert(object.id(), index);
             index_to_vertex.insert(
                 index,
                 LeanVertex::Object {
-                    id: object.id(),
+                    inner: object.id(),
                     size: input_size.clone(),
                 },
             );
