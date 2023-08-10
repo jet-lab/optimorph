@@ -14,6 +14,15 @@ use crate::{
     vertex::{LeanVertex, Vertex},
 };
 
+/// Finds the most cost-efficient path from source to target using the bellman
+/// ford algorithm.
+///
+/// During shortest path optimization, the same `input_size` is used for all
+/// morphisms. Accumulation (applying the output of one morphism as the input of
+/// the next) is not supported by bellman-ford. However, once the shortest path
+/// is found, it will be re-applied with accumulation. This means that there may
+/// be some error in terms of which path has been selected, but there will be no
+/// error in the values contained within the returned path.
 pub fn shortest_single_path_with_bellman_ford<
     const NON_NEGATIVE: bool,
     Id: Key,
@@ -25,19 +34,29 @@ pub fn shortest_single_path_with_bellman_ford<
     category: &Category<Id, M, Obj>,
     source: Id,
     target: Id,
-    input_size: Size, // used for all morphisms - accumulation is not supported
+    input_size: Size,
 ) -> Result<Option<WellFormedPath<Id, M, Obj, Size, Cost>>, PathFindingError<Id>> {
     let mut general =
         shortest_multi_path_with_bellman_ford(category, source, &[target], input_size)?;
     if general.is_empty() {
         Ok(None)
     } else {
-        // function below should guarantee at most a single result since targets
-        // has length 1
+        // function below should guarantee return of at most a single item when
+        // `targets` has a length of 1
         Ok(Some(general.swap_remove(0)))
     }
 }
 
+/// Finds the most cost-efficient paths from the source to each target using the
+/// bellman ford algorithm. At most one path is returned for each target
+/// provided, and it is possible that there is no path to the target.
+///
+/// During shortest path optimization, the same `input_size` is used for all
+/// morphisms. Accumulation (applying the output of one morphism as the input of
+/// the next) is not supported by bellman-ford. However, once the shortest paths
+/// are found, they will be re-applied with accumulation. This means that there
+/// may be some error in terms of which paths have been selected, but there will
+/// be no error in the values contained within the returned paths.
 pub fn shortest_multi_path_with_bellman_ford<
     const NON_NEGATIVE: bool,
     Id: Key,
@@ -49,7 +68,7 @@ pub fn shortest_multi_path_with_bellman_ford<
     category: &Category<Id, M, Obj>,
     source: Id,
     targets: &[Id],
-    input_size: Size, // used for all morphisms - accumulation is not supported
+    input_size: Size,
 ) -> Result<Vec<WellFormedPath<Id, M, Obj, Size, Cost>>, PathFindingError<Id>> {
     if targets.is_empty() || category.get_object(&source).is_none() {
         return Ok(vec![]);

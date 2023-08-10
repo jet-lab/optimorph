@@ -59,10 +59,6 @@ where
 /// Every morphism uses the user-provided "input_size" as its input. There is no
 /// accumulation of sizes through a path. No object size or morphism input can
 /// be based on the shape of the graph that came before it.
-///
-/// TODO: There is a much faster approach to shortest_paths that uses the fact
-/// that the petgraph output for bellmon_ford already calculates the distance
-/// from the input source to every possible target.
 pub struct Negatable;
 
 impl<M, Size, Cost, const NON_NEGATIVE: bool> Optimizer<M, Size, Cost, NON_NEGATIVE> for Negatable
