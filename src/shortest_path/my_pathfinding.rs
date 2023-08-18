@@ -25,6 +25,27 @@ pub fn shortest_single_path_with_dijkstra<
     target: Id,
     input_size: Size,
 ) -> Option<WellFormedPath<Id, M, Obj, Size, Cost>> {
+    inaccurate_shortest_single_path_with_dijkstra(category, source, target, input_size)
+}
+
+/// This is considered "inaccurate" because it does not express the requirement
+/// through the type system that costs must be non-negative, which is a
+/// requirement for dijkstra to provide accurate results. This function may
+/// return a sub-optimal path if you cannot guarantee the cost to be
+/// non-negative.
+pub(crate) fn inaccurate_shortest_single_path_with_dijkstra<
+    const NON_NEGATIVE: bool,
+    Id: Key,
+    Obj: Object<Id>,
+    M: MorphismMeta + ApplyMorphism<Size, Cost, NON_NEGATIVE>,
+    Size: PathfindingSize,
+    Cost: PathfindingCost,
+>(
+    category: &Category<Id, M, Obj>,
+    source: Id,
+    target: Id,
+    input_size: Size,
+) -> Option<WellFormedPath<Id, M, Obj, Size, Cost>> {
     if source == target || category.get_object(&source).is_none() {
         return None;
     }

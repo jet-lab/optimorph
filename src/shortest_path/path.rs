@@ -139,7 +139,7 @@ where
 /// Reapplies the sequence of morphisms based on a new input size. This function
 /// accumulates, which means it uses the output size of each morphism as the
 /// input size of the next.
-/// 
+///
 /// Use one of the sum functions to aggregate the cost into a single number.
 ///
 /// The costs cannot be accumulated here because there are different traits that
