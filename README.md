@@ -25,7 +25,7 @@ Optimizers return the following data:
 When determining the size and cost, each morphism transforms the input size of its source object into an output size that acts as the size of the next object and morphism in the path. This is referred to as "accumulation" and it is always applied to the sizes and costs that are returned, regardless of the optimizer. However, accumulation is not always used during the path selection process. This library guarantees perfectly optimal path-selection for *either* accumulation *or* negative costs. Each optimizer has a different specialty:
 
 | Optimizer | Accumulation applied to returned size and cost | Accumulation considered during path selection | Negative costs supported | Negative cycle behavior (complete paths exist but none are both optimal and finite) |
-| -- | -- | -- | -- | -- |
+| -- | :-: | :-: | :-: | -- |
 | Accumulating | ✅ | ✅ | ❌ | Not possible |
 | Negatable | ✅ | ❌ | ✅ | Returns Err |
 | NegatableInfallible | ✅ | ❌ | ✅ | Returns a sub-optimal path |
