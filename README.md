@@ -3,10 +3,11 @@
 Use graph optimization algorithms dijkstra and bellman-ford to find the lowest cost composite morphism between any two objects.
 
 This crate builds on the graph optimization crates petgraph and pathfinding, adding several additional features to the optimization algorithms that are not supported by these crates:
-1. Multigraph support with unique identifiable edges called morphisms.
-2. Variable morphism input sizes (object sizes) with input-dependent cost functions.
-3. Accumulation: output sizes are returned from one morphism and fed into successive morphisms as their inputs.
-4. Infallible optimization algorithms with robust handling of negative cost cycles.
+1. Multigraph support with unique identifiable edges called "morphisms".
+2. Vertices, called "objects", may have variable sizes, and are used as morphism inputs.
+3. Morphisms may have input-dependent cost functions.
+4. Accumulation: Morphism cost functions may also return a custom size for its output object, which is fed into the next morphism as its input.
+5. Infallible optimization algorithms with robust handling of negative cost cycles.
 
 More on point 1: petgraph and pathfinding only support single anonymous edges between any two vertices. This crate takes a different approach, elevating the concept of an "edge" to a first class citizen called a "morphism". There may be any number of morphisms between any two "objects", which are analogous to vertices in a graph. Instead of returning a list of vertices, shortest-path optimization returns a CompositeMorphism that is defined as a sequence of individual morphisms.
 
@@ -23,11 +24,11 @@ Optimizers return the following data:
 
 When determining the size and cost, each morphism transforms the input size of its source object into an output size that acts as the size of the next object and morphism in the path. This is referred to as "accumulation" and it is always applied to the sizes and costs that are returned, regardless of the optimizer. However, accumulation is not always used during the path selection process. This library guarantees perfectly optimal path-selection for *either* accumulation *or* negative costs. Each optimizer has a different specialty:
 
-| Optimizer | Accumulation applied to returned size and cost | Accumulation used during path selection | Negative costs supported | Negative cycle behavior |
+| Optimizer | Accumulation applied to returned size and cost | Accumulation considered during path selection | Negative costs supported | Negative cycle behavior (complete paths exist but none are both optimal and finite) |
 | -- | -- | -- | -- | -- |
-| Accumulating | Yes | Yes | No | Not possible |
-| Negatable | Yes | No | Yes | Returns Err |
-| NegatableInfallible | Yes | No | Yes | Returns potentially sub-optimal path |
+| Accumulating | ✅ | ✅ | ❌ | Not possible |
+| Negatable | ✅ | ❌ | ✅ | Returns Err |
+| NegatableInfallible | ✅ | ❌ | ✅ | Returns a sub-optimal path |
 
 You always specify some "input size" to the path optimizer.
 
