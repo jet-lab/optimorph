@@ -16,11 +16,21 @@ This crate can handle a wide variety of approaches to determine the cost of a co
 
 Alternatively, different morphisms can have different costs. You can define a custom cost function that calculates the cost based on some arbitrary input "size".
 
-You can optionally also have one (but not both) of these special behaviors:
-1. each morphism transforms the input size of its source object into an output size that acts as the size of the next object in that path.
-2. morphism costs can be negative, allowing you to use it as a more abstract "score" that can go up and down. be careful to avoid negative cycles, which make it impossible to find a path.
+Depending on the optimizer you select, there is also support for additional features.
+- `Accumulating`: Each morphism transforms the input size of its source object into an output size that acts as the size of the next object in that path.
+- `Negatable` and `NegatableInfallible`: Morphism costs can be negative, allowing you to use it as a more abstract "score" that can go up and down. be careful to avoid negative cycles, which make it impossible to find a path.
 
-You always specify some "input size" to the path optimizer. With option 1, it acts as the size of the first object only. With option 2, each morphism reuses this same exact "input size" as if it is the input it received from its source.
+The optimizer return value specifies three general ideas:
+1. path selection: the sequence of morphisms and objects that constitute the optimized path
+2. size: the input and output sizes for each step
+3. cost: the overall cost of the returned path
+
+This library guarantees perfect optimization with *either* accumulation *or* negative costs. No matter which optimizer you select, points 2 and 3 will accurately depict the effects of accumulation as applied to the path described in point 1. However, the path selection process only considers accumulation if you use the `Accumulating` optimizer, which is not compatible with negative costs.
+
+You always specify some "input size" to the path optimizer. With the `Negatable` optimizer, it calculates the cost of each morphism by using that same input size for every morphism, then it finds the optimal path assuming those are the costs. After the path is found, it reapplies the morphisms within that path to properly account for any accumulation you may have specified in the cost function, and then it adjusts the size and cost as reported in the return value appropriately.
+
+With the `Accumulating` optimizer, the actual optimization algorithm selects the optimal path by comparing the costs of their accumulated sizes, with output-to-input accumulation already applied uniquely to each individual path. The downside is that negative costs are not supported by this optimizer.
+
 
 ## Graph vs Category?
 
