@@ -4,22 +4,22 @@ Use graph optimization algorithms dijkstra and bellman-ford to find the lowest c
 
 This crate builds on the graph optimization crates petgraph and pathfinding, adding several additional features to the optimization algorithms that are not supported by these crates:
 1. Multigraph support with unique identifiable edges called morphisms.
-2. Variable morphism input sizes with input-dependent cost functions.
-3. Accumulation: return values are output from one morphism and fed into successive morphisms as their inputs.
+2. Variable morphism input sizes (object sizes) with input-dependent cost functions.
+3. Accumulation: output sizes are returned from one morphism and fed into successive morphisms as their inputs.
 4. Infallible optimization algorithms with robust handling of negative cost cycles.
 
 More on point 1: petgraph and pathfinding only support single anonymous edges between any two vertices. This crate takes a different approach, elevating the concept of an "edge" to a first class citizen called a "morphism". There may be any number of morphisms between any two "objects", which are analogous to vertices in a graph. Instead of returning a list of vertices, shortest-path optimization returns a CompositeMorphism that is defined as a sequence of individual morphisms.
 
-## Cost
+## Optimizers Minimize Cost
 
-This crate can handle a wide variety of approaches to determine the cost of a composite morphism. By default, it uses the basic case where every morphism has equal cost, which is an ordinary shortest-path optimization of unweighted directed multigraph.
+This crate can handle a wide variety of approaches to determine the cost of a composite morphism. By default, it uses the basic case where every morphism has equal cost, which is an ordinary shortest-path optimization of an unweighted directed multigraph.
 
 Optimorph also supports weighted graph optimization. Different morphisms can have different costs, and those costs may also depend on prior morphisms from the path. You can define a custom cost function called `apply_morphism` that accepts the size of its source object as an input, and returns the output size of its target object, plus the cost of the morphism.
 
-Optimizers returns the following data:
+Optimizers return the following data:
 1. path selection: the sequence of morphisms and objects constituting the path with the lowest cost.
 2. size: the input and output sizes for each step
-3. cost: the overall cost of the entire returned path
+3. cost: the overall cost of the entire returned path, and the cost of each component morphism
 
 When determining the size and cost, each morphism transforms the input size of its source object into an output size that acts as the size of the next object and morphism in the path. This is referred to as "accumulation" and it is always applied to the sizes and costs that are returned, regardless of the optimizer. However, accumulation is not always used during the path selection process. This library guarantees perfectly optimal path-selection for *either* accumulation *or* negative costs. Each optimizer has a different specialty:
 
