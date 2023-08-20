@@ -1,8 +1,16 @@
-Optimize for the least expensive morphism between any two objects.
+# Optimorph
 
-This crate builds on the graph optimization crates petgraph and pathfinding. These crates only support single anonymous edges between any two vertices. This crate takes a different approach, elevating the concept of an "edge" to a first class citizen called a "morphism". There may be any number of morphisms between any two "objects", which are analogous to vertices in a graph. Instead of returning a list of vertices, shortest-path optimization returns a CompositeMorphism that is defined as a sequence of individual morphisms.
+Use graph optimization algorithms dijkstra and bellman-ford to find the lowest cost composite morphism between any two objects.
 
-# Cost
+This crate builds on the graph optimization crates petgraph and pathfinding, adding several additional features to the optimization algorithms that are not supported by these crates:
+1. Multigraph support with unique identifiable edges called morphisms.
+2. Variable morphism input sizes with input-dependent cost functions.
+3. Accumulation: return values are output from one morphism and fed into successive morphisms as their inputs.
+4. Infallible optimization algorithms with robust handling of negative cost cycles.
+
+More on point 1: petgraph and pathfinding only support single anonymous edges between any two vertices. This crate takes a different approach, elevating the concept of an "edge" to a first class citizen called a "morphism". There may be any number of morphisms between any two "objects", which are analogous to vertices in a graph. Instead of returning a list of vertices, shortest-path optimization returns a CompositeMorphism that is defined as a sequence of individual morphisms.
+
+## Cost
 
 This crate can handle a wide variety of approaches to determine the cost of a composite morphism. By default, it uses the basic case where every morphism has equal cost. This is an ordinary shortest-path optimization of unweighted directed multigraph.
 
@@ -14,14 +22,14 @@ You can optionally also have one (but not both) of these special behaviors:
 
 You always specify some "input size" to the path optimizer. With option 1, it acts as the size of the first object only. With option 2, each morphism reuses this same exact "input size" as if it is the input it received from its source.
 
-# Graph vs Category?
+## Graph vs Category?
 
 This crate primarly uses the language of category theory instead of graph theory, even though the data structures can be described as a graph. There are three reasons for this:
 - The morphisms are composable, which is a definitive feature of morphisms in category theory, but not edges in graph theory.
 - The category is actually a multigraph, where it is useful to think of distinct edges between two vertices as different types of transformations between those vertices, which is more consistent with the style of thinking in category than graph theory.
 - The category is actually implemented with an underlying graph data structure whose vertices are not one-to-one with the objects in the top layer. Different terminology helps distinguish the layers. See below for a more detailed explanation of the layers.
 
-## Layers
+### Layers
 
 Layer 1 is the bottom layer implementation graph, and layer 2 is the category exposed by this library:
 
