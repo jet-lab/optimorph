@@ -55,7 +55,7 @@ impl ApplyMorphism<Float, Float, true> for DeductiveLinearCost {
 }
 
 /// Every morphism is always a cost of 1, for a basic unweighted graph.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct ConstantCost;
 
 impl ApplyMorphism<(), Float, true> for ConstantCost {

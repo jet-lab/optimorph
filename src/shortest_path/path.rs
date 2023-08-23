@@ -49,6 +49,16 @@ pub struct AppliedCompositeMorphism<Id, M, Obj = Id, Size = Float, Cost = Float>
     pub cost: Cost,
 }
 
+impl<Id, M, Obj, Size: Clone, Cost> AppliedCompositeMorphism<Id, M, Obj, Size, Cost> {
+    pub fn input(&self) -> Size {
+        self.morphisms.first().source.1.clone()
+    }
+
+    pub fn output(&self) -> Size {
+        self.morphisms.last().target.1.clone()
+    }
+}
+
 /// A heavyweight version of Morphism that includes the full input and output
 /// objects plus their sizes since this is applied in a path.
 #[derive(Clone, Debug)]

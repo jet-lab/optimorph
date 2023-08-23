@@ -6,7 +6,6 @@ use crate::{
     category::{Category, HasId, Key},
     collections::SomeVec,
     impls::Float,
-    vertex::LeanVertex,
 };
 
 pub trait MorphismMeta: Hash + Eq + Clone {}
@@ -71,11 +70,11 @@ impl<Id, M> Morphism<Id, M> {
     }
 
     /// Needed for `pathfinding`
-    pub(crate) fn successors<const NON_NEGATIVE: bool, Obj, Size: Clone, Cost>(
+    pub(crate) fn successor<const NON_NEGATIVE: bool, Obj, Size: Clone, Cost>(
         &self,
         category: &Category<Id, M, Obj>,
         input_size: Size,
-    ) -> Vec<(LeanVertex<Id, M, Size>, Cost)>
+    ) -> (Id, Size, Cost)
     where
         M: ApplyMorphism<Size, Cost, NON_NEGATIVE>,
         Id: Key,
@@ -88,13 +87,7 @@ impl<Id, M> Morphism<Id, M> {
         let output = self.metadata.apply(input_size);
         //todo configurable: replace by output, do not touch, set to constant
         // next_object.size = output.size;
-        vec![(
-            LeanVertex::Object {
-                inner: self.target.clone(),
-                size: output.size,
-            },
-            output.cost,
-        )]
+        (self.target.clone(), output.size, output.cost)
     }
 }
 

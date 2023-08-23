@@ -113,10 +113,10 @@ fn get_category() -> Category<MyObjId, MyMorphMeta, MyObject> {
 /// increases the cost of step2_static
 #[test]
 fn dijkstra_pathfinding() {
-    let path =
-        Accumulating::shortest_path(&get_category(), MyObjId([0, 0]), MyObjId([1, 1]), 10.into())
-            .safe_unwrap()
-            .unwrap();
+    let path = Accumulating
+        .shortest_path(&get_category(), MyObjId([0, 0]), MyObjId([1, 1]), 10.into())
+        .safe_unwrap()
+        .unwrap();
 
     assert_eq!(path.cost, 250.into());
 }
@@ -127,10 +127,10 @@ fn dijkstra_pathfinding() {
 /// was selected.
 #[test]
 fn bellman_ford_petgraph() {
-    let path =
-        Negatable::shortest_path(&get_category(), MyObjId([0, 0]), MyObjId([1, 1]), 10.into())
-            .unwrap()
-            .unwrap();
+    let path = Negatable
+        .shortest_path(&get_category(), MyObjId([0, 0]), MyObjId([1, 1]), 10.into())
+        .unwrap()
+        .unwrap();
 
     assert_eq!(path.cost, 920.into());
 }

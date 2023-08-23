@@ -58,7 +58,8 @@ fn transitions() -> Vec<MyMorph> {
 
 #[test]
 fn dijkstra_pathfinding() {
-    let path = Accumulating::shortest_path(&transitions().into(), 2, 0, 100.into())
+    let path = Accumulating
+        .shortest_path(&transitions().into(), 2, 0, 100.into())
         .safe_unwrap()
         .unwrap();
     let expected = expected([100, 0, 0]);
@@ -71,7 +72,8 @@ fn dijkstra_pathfinding() {
 
 #[test]
 fn bellman_ford_petgraph() {
-    let path = Negatable::shortest_path(&transitions().into(), 2, 0, 100.into())
+    let path = Negatable
+        .shortest_path(&transitions().into(), 2, 0, 100.into())
         .unwrap()
         .unwrap();
     let expected = expected([100, 0, 0]);

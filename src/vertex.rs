@@ -3,7 +3,7 @@
 //! edges in the graph represent the fact that objects and morphisms are
 //! connected.
 
-use std::hash::Hash;
+use std::{collections::HashSet, hash::Hash};
 
 use pathfinding::num_traits::Zero;
 
@@ -58,6 +58,7 @@ impl<Id, M, Size> Default for LeanVertex<Id, M, Size> {
     }
 }
 
+// TODO: consolidate
 impl<Id, M, Size> LeanVertex<Id, M, Size> {
     pub fn successors<const NON_NEGATIVE: bool, Obj, Cost: Zero>(
         &self,
@@ -88,7 +89,59 @@ impl<Id, M, Size> LeanVertex<Id, M, Size> {
             LeanVertex::Morphism {
                 inner,
                 input: input_size,
-            } => inner.successors(category, input_size.clone()),
+            } => {
+                let (id, size, cost) = inner.successor(category, input_size.clone());
+                vec![(LeanVertex::Object { inner: id, size }, cost)]
+            }
+        }
+    }
+
+    /// Avoids cycles by preventing re-visit of any objects.
+    pub fn blacklisted_successors<const NON_NEGATIVE: bool, Obj, Cost: Zero>(
+        &self,
+        category: &Category<Id, M, Obj>,
+        blacklist: &mut HashSet<Id>,
+    ) -> Vec<(LeanVertex<Id, M, Size>, Cost)>
+    where
+        Id: Key,
+        Obj: HasId<Id>,
+        M: ApplyMorphism<Size, Cost, NON_NEGATIVE>,
+        M: Clone,
+        Size: Clone,
+    {
+        match self {
+            LeanVertex::Object { inner: id, size } => {
+                blacklist.insert(id.clone());
+                category
+                    .get_outbound(id)
+                    .expect("The object id was not found in the category") //todo
+                    .iter()
+                    .filter_map(|m| {
+                        if blacklist.contains(&m.target) {
+                            None
+                        } else {
+                            Some((
+                                LeanVertex::Morphism {
+                                    inner: m.clone(),
+                                    input: size.clone(),
+                                },
+                                Cost::zero(),
+                            ))
+                        }
+                    })
+                    .collect()
+            }
+            LeanVertex::Morphism {
+                inner,
+                input: input_size,
+            } => {
+                let (id, size, cost) = inner.successor(category, input_size.clone());
+                if blacklist.contains(&id) {
+                    vec![]
+                } else {
+                    vec![(LeanVertex::Object { inner: id, size }, cost)]
+                }
+            }
         }
     }
 }

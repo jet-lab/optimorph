@@ -40,6 +40,17 @@ where
     M: MorphismMeta,
 {
     fn from(morphisms: Vec<Morphism<Id, M>>) -> Self {
+        Self::from_morphisms(morphisms)
+    }
+}
+
+impl<Id, M> Category<Id, M, Id>
+where
+    Id: Key + HasId<Id>,
+    M: MorphismMeta,
+{
+    // If the object and id are the same type, all you need are morphisms to create the category
+    pub fn from_morphisms(morphisms: impl IntoIterator<Item = Morphism<Id, M>>) -> Self {
         let mut new = Self::new();
         for morphism in morphisms {
             new.objects

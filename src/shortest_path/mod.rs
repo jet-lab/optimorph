@@ -37,6 +37,7 @@ where
     type Error<Id: Key, O> = Infallible;
 
     fn shortest_path<Id, Obj>(
+        &self,
         category: &Category<Id, M, Obj>,
         source: Id,
         target: Id,
@@ -71,6 +72,7 @@ where
     type Error<Id: Key, O> = PathFindingError<Id>;
 
     fn shortest_path<Id, Obj>(
+        &self,
         category: &Category<Id, M, Obj>,
         source: Id,
         target: Id,
@@ -84,6 +86,7 @@ where
     }
 
     fn shortest_paths<Id, Obj>(
+        &self,
         category: &Category<Id, M, Obj>,
         sources: Vec<(Id, Size)>,
         targets: Vec<Id>,
@@ -134,6 +137,7 @@ where
     type Error<Id: Key, O> = Infallible;
 
     fn shortest_path<Id, Obj>(
+        &self,
         category: &Category<Id, M, Obj>,
         source: Id,
         target: Id,
@@ -157,6 +161,7 @@ where
     }
 
     fn shortest_paths<Id, Obj>(
+        &self,
         category: &Category<Id, M, Obj>,
         sources: Vec<(Id, Size)>,
         targets: Vec<Id>,
@@ -191,5 +196,57 @@ where
             }
         }
         Ok(results)
+    }
+}
+
+/// Uses dijkstra, which normally cannot handle negative costs accurately. Good
+/// results are achieved by selecting numerous paths and then sorting them by
+/// cost.
+pub struct NegatableByRank(pub usize);
+
+impl NegatableByRank {
+    pub fn shortest_path_options<M, Size, Cost, Id, Obj, const NON_NEGATIVE: bool>(
+        &self,
+        category: &Category<Id, M, Obj>,
+        source: Id,
+        target: Id,
+        input_size: Size,
+    ) -> Vec<WellFormedPath<Id, M, Obj, Size, Cost>>
+    where
+        M: MorphismMeta + ApplyMorphism<Size, Cost, NON_NEGATIVE>,
+        Size: PathfindingSize + Clone,
+        Cost: PathfindingCost + FloatMeasure,
+        Id: Key,
+        Obj: Object<Id>,
+    {
+        my_pathfinding::inaccurate_shortest_single_path_with_dijkstra_yen(
+            category, source, target, input_size, self.0,
+        )
+    }
+}
+
+impl<M, Size, Cost, const NON_NEGATIVE: bool> Optimizer<M, Size, Cost, NON_NEGATIVE>
+    for NegatableByRank
+where
+    M: MorphismMeta + ApplyMorphism<Size, Cost, NON_NEGATIVE>,
+    Size: PathfindingSize + Clone,
+    Cost: PathfindingCost + FloatMeasure,
+{
+    type Error<Id: Key, O> = Infallible;
+
+    fn shortest_path<Id, Obj>(
+        &self,
+        category: &Category<Id, M, Obj>,
+        source: Id,
+        target: Id,
+        input_size: Size,
+    ) -> Result<Option<WellFormedPath<Id, M, Obj, Size, Cost>>, Infallible>
+    where
+        Id: Key,
+        Obj: Object<Id>,
+    {
+        Ok(self
+            .shortest_path_options(category, source, target, input_size)
+            .pop())
     }
 }

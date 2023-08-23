@@ -18,6 +18,7 @@ where
     /// Returns the cheapest path from source to target
     #[allow(clippy::type_complexity)]
     fn shortest_path<Id, Obj>(
+        &self,
         category: &Category<Id, M, Obj>,
         source: Id,
         target: Id,
@@ -30,6 +31,7 @@ where
     /// Returns the cheapest path from each source to each target
     #[allow(clippy::type_complexity)]
     fn shortest_paths<Id, Obj>(
+        &self,
         category: &Category<Id, M, Obj>,
         sources: Vec<(Id, Size)>,
         targets: Vec<Id>,
@@ -41,12 +43,7 @@ where
         let mut results = vec![];
         for (source, input) in sources {
             for target in targets.clone() {
-                results.push(Self::shortest_path(
-                    category,
-                    source.clone(),
-                    target,
-                    input.clone(),
-                ));
+                results.push(self.shortest_path(category, source.clone(), target, input.clone()));
             }
         }
         results
@@ -69,6 +66,7 @@ where
     /// - a value with any type, as long as it implements the required trait
     ///   bounds for a cost.
     fn ranked_paths<Id, Obj, Score, PathRet, Calculator>(
+        &self,
         category: &Category<Id, M, Obj>,
         sources: Vec<(Id, Size)>,
         targets: Vec<Id>,
@@ -81,7 +79,8 @@ where
         PathRet: From<WellFormedPath<Id, M, Obj, Size, Cost>> + Replace<Cost>,
         Calculator: Fn(&PathRet) -> Score,
     {
-        let mut paths = Self::shortest_paths(category, sources, targets)?
+        let mut paths = self
+            .shortest_paths(category, sources, targets)?
             .into_iter()
             .map(PathRet::from)
             .map(|path| {
