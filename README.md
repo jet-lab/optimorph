@@ -24,11 +24,12 @@ Optimizers return the following data:
 
 When determining the size and cost, each morphism transforms the input size of its source object into an output size that acts as the size of the next object and morphism in the path. This is referred to as "accumulation" and it is always applied to the sizes and costs that are returned, regardless of the optimizer. However, accumulation is not always used during the path selection process. This library guarantees perfectly optimal path-selection for *either* accumulation *or* negative costs. Each optimizer has a different specialty:
 
-| Optimizer | Accumulation applied to returned size and cost | Accumulation considered during path selection | Negative costs supported | Negative cycle behavior (complete paths exist but none are both optimal and finite) |
-| -- | :-: | :-: | :-: | -- |
-| Accumulating | ✅ | ✅ | ❌ | Not possible |
-| Negatable | ✅ | ❌ | ✅ | Returns Err |
-| NegatableInfallible | ✅ | ❌ | ✅ | Returns a sub-optimal path |
+| Optimizer | Accumulation applied to returned size and cost | Accumulation considered during path selection | Negative costs supported | Negative cycle behavior [(?)](# "A negative cycle means that complete paths do exist, but none of them are optimal because there is a loop of connected nodes that result in a negative cost, so the most optimal path would be an infinite loop over those nodes.") | Result may be sub-optimal if... |
+| -- | :-: | :-: | :-: | -- | -- |
+| Accumulating | ✅ | ✅ | ❌ | Not possible | ...you violate the NON_NEGATIVE constraint. |
+| Negatable | ✅ | ❌ | ✅ | Returns Err | ...there is a negative cycle or if cost depends on accumulation. |
+| NegatableInfallible | ✅ | ❌ | ✅ | Returns a sub-optimal path | ...there is a negative cycle or if cost depends on accumulation. |
+| NegatableByRank | ✅ | ✅ | ✅ | Returns a sub-optimal path | ...costs are negative, even if there is not a negative cycle. However, with a sufficiently large sample set (the usize you must provide for this optimizer), the result will be optimal, even with negative costs. |
 
 You always specify some "input size" to the path optimizer.
 
